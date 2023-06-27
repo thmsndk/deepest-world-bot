@@ -33,12 +33,12 @@ setInterval(() => {
     }
 
     if (dw.isSkillReady(2) /* fastheal1 */ && !dw.character.fx["fastheal1"]) {
-        console.log("low health, fastheal1");
-        dw.useSkill(2, dw.character);
-        // dw.useSkill(2, { i:2, id: dw.character.id });
-        //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
-        return;
-      }
+      console.log("low health, fastheal1");
+      dw.useSkill(2, dw.character);
+      // dw.useSkill(2, { i:2, id: dw.character.id });
+      //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
+      return;
+    }
   }
 
   if (isLowHealth && !targetingMe) {
@@ -116,7 +116,7 @@ function moveToRandomValidPointNearCharacter() {
   // TODO: if an entity is on a tile, give that tile a higher danger as well as tiles in a radius around it
   // TODO: pick a random valid point with the lowest score and use dw.move(x,y) to move to that, making sure you don't cross tiles with high danger
   const character = dw.character; // Assuming you have access to the character object
-  const gridSize = 10; // Adjust this value based on the desired size of the grid
+  const gridSize = 15; // Adjust this value based on the desired size of the grid
 
   // Calculate the center of the grid
   const centerX = Math.floor(gridSize / 2);
@@ -144,19 +144,52 @@ function moveToRandomValidPointNearCharacter() {
   // Calculate danger score for each tile based on nearby entities
   const entities = dw.entities; // Assuming you have access to the list of entities
   entities.forEach((entity) => {
-    let dangerRadius = 3; // Adjust this value based on the desired radius of danger around entities
-    if (entity.hostile && entity.targetId !== dw.character.id) dangerRadius = 10;
+    if (entity.tree) {
+      return;
+    }
 
+    let dangerRadius = 1; // Adjust this value based on the desired radius of danger around entities
+    let dangerIncrement = 1;
+    if (entity.hostile && entity.targetId !== dw.character.id) {
+      dangerRadius = 5;
+      dangerIncrement = 2;
+    }
+    // TODO: adjust danger level with more than 1
     if (entity.l !== dw.character.l) return;
     grid.forEach((tile) => {
       const distance = Math.sqrt(
         Math.pow(tile.x - entity.x, 2) + Math.pow(tile.y - entity.y, 2)
       );
       if (distance <= dangerRadius) {
-        tile.danger += 1; // Increase the danger score within the radius
+        tile.danger += dangerIncrement; // Increase the danger score within the radius
       }
     });
   });
+
+  const getTileColor = (danger) => {
+    if (danger === 0) {
+      return "white";
+    }
+    if (danger <= 1) {
+      return "yellow";
+    }
+    if (danger === 2) {
+      return "orange";
+    }
+
+    if (danger > 2) {
+      return "red";
+    }
+  };
+  drawingGroups["dangerGrid"] = [
+    ...grid.map((tile) => ({
+      type: "rectangle",
+      point: { x: tile.x, y: tile.y },
+      width: 96,
+      height: 96,
+      color: getTileColor(tile.danger),
+    })),
+  ];
 
   // Find valid points with the lowest score
   const validPoints = grid.filter((tile) => tile.walkable);

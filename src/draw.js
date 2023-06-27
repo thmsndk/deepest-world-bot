@@ -2,11 +2,25 @@
  * DRAW STUFF v0.0.1
  */
 
+// TODO: might need to store a reference to what we push into drawings so we can "destroy" them
+// TODO: How do we make sure that the drawing exists in between renders?
+
+// Drawing groups lets you clear the groups in another loop thus gaining control over when it resets
+let drawingGroups = {};
 // Define the drawings collection
 let drawings = [];
-
 // Event handler for the "drawEnd" event
 dw.on("drawEnd", (ctx) => {
+  for (const key in drawingGroups) {
+    drawStuff(ctx, drawingGroups[key]);
+  }
+  drawStuff(ctx, drawings);
+  // Clear drawings for next render cycle
+  drawings = [];
+  // addDrawExamples();
+});
+
+function drawStuff(ctx, drawings) {
   // Iterate over the drawings collection
   drawings.forEach((drawing) => {
     // Use utility functions to render the shape based on the drawing type
@@ -16,7 +30,6 @@ dw.on("drawEnd", (ctx) => {
         ctx.canvas.height,
         drawing.point
       );
-
       drawCircle(
         ctx,
         canvasCirclePoint.x,
@@ -64,10 +77,9 @@ dw.on("drawEnd", (ctx) => {
       drawPath(ctx, canvasPoints, drawing.color);
     }
   });
+}
 
-  // Clear drawings for next render cycle
-  drawings = [];
-
+function addDrawExamples() {
   // Example usage:
   // Render circle at player
   drawings.push({
@@ -96,7 +108,6 @@ dw.on("drawEnd", (ctx) => {
     endPoint: { x: dw.character.x + 10, y: dw.character.y - 10 },
     color: "green",
   });
-
   // draw a path somewhere random
   drawings.push({
     type: "path",
@@ -108,7 +119,7 @@ dw.on("drawEnd", (ctx) => {
     ],
     color: "purple",
   });
-});
+}
 
 // Function to map a point to the canvas
 function mapPointToCanvas(canvasWidth, canvasHeight, point) {
