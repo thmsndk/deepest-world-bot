@@ -1,39 +1,132 @@
 dw.debug = 1;
-const farmMobs = true;
-const farmTrees = false;
+const farmMobs = false;
+const farmTrees = true;
+const farmOre = true;
+const farmMissions = true;
 const treeDistance = 10;
 
 // go to spawn
 //dw.move(dw.character.spawn.x,dw.character.spawn.y)
+// old spawn {l:0,x:58,y:70}
 
 setInterval(() => {
+  // TODO: don't enter too high lvl missions
+  // Handle death in missions and joining it again
+
+  const missionBoards = dw.entities.filter(
+    (entity) => entity.md === "missionBoard" && entity.storage.length > 0
+  );
+
+  if (dw.character.mission && farmMissions) {
+    const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
+    const shouldAbandonMission =
+      dw.character.mission &&
+      dw.character.mission.progress < 100 &&
+      timeLeft <= 5 * 60000;
+    // TODO: teleport when timer is getting too low
+
+    if (shouldAbandonMission && missionBoards.length > 0) {
+      // TODO should probably find the correct mission board to abandon
+      dw.abandonMission();
+    }
+
+    if (!shouldAbandonMission && missionBoards.length > 0) {
+      const board = missionBoards[0];
+      const inRange = dw.distance(dw.character, board) <= 1;
+      if (!inRange) {
+        dw.move(board.x, board.y);
+      } else {
+        dw.enterMission();
+      }
+    }
+  } else {
+    if (missionBoards.length > 0 && farmOre && farmMissions) {
+      const board = missionBoards[0];
+      // TODO: find slot
+      for (let index = 0; index < board.storage.length; index++) {
+        const mission = board.storage[index];
+        if (mission) {
+          const inRange = dw.distance(dw.character, board) <= 2;
+          if (!inRange) {
+            dw.move(board.x, board.y);
+            return;
+          } else {
+            dw.acceptMission(board.id, index);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // TODO z-index
+  drawingGroups["spawnArea"] = [
+    {
+      type: "rectangle",
+      point: { x: dw.character.spawn.x, y: dw.character.spawn.y },
+      width: 5 * 96,
+      height: 5 * 96,
+      color: "#00FF00",
+    },
+    {
+      type: "circle",
+      point: { x: dw.character.spawn.x, y: dw.character.spawn.y },
+      radius: 0.5,
+      color: "#00FF00",
+    },
+  ];
+
   const targetingMe = dw.findClosestMonster(
     (entity) => entity.targetId === dw.character.id
   );
 
-  const isLowHealth = dw.character.hp / dw.character.hpMax < 0.25;
+  const healthPercentage = dw.character.hp / dw.character.hpMax;
+  const isLowHealth = healthPercentage < 0.25;
 
-  if (dw.character.hp / dw.character.hpMax < 0.75 /*&& !dw.character.gcd*/) {
+  if (healthPercentage < 0.75 /*&& !dw.character.gcd*/) {
     // dw.c.fx contains debuff/effect
 
     if (dw.isSkillReady(4) /* slowheal1 */ && !dw.character.fx["slowheal1"]) {
-      console.log("low health, slowheal1");
+      console.log(
+        "low health, slowheal1",
+        healthPercentage,
+        dw.character.hp,
+        dw.character.hpMax
+      );
       dw.useSkill(4, dw.character);
       //   dw.useSkill(3, { id: dw.character.id });
       //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
       return;
     }
 
-    if (dw.isSkillReady(3) /* heal */ && !dw.character.fx["heal"]) {
-      console.log("low health, heal");
+    if (
+      healthPercentage < 0.5 &&
+      dw.isSkillReady(3) /* heal */ &&
+      !dw.character.fx["heal"]
+    ) {
+      console.log(
+        "low health, heal",
+        healthPercentage,
+        dw.character.hp,
+        dw.character.hpMax
+      );
       dw.useSkill(3, dw.character);
       //   dw.useSkill(3, { id: dw.character.id });
       //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
       return;
     }
 
-    if (dw.isSkillReady(2) /* fastheal1 */ && !dw.character.fx["fastheal1"]) {
-      console.log("low health, fastheal1");
+    if (
+      healthPercentage < 0.15 &&
+      dw.isSkillReady(2) /* fastheal1 */ &&
+      !dw.character.fx["fastheal1"]
+    ) {
+      console.log(
+        "low health, fastheal1",
+        healthPercentage,
+        dw.character.hp,
+        dw.character.hpMax
+      );
       dw.useSkill(2, dw.character);
       // dw.useSkill(2, { i:2, id: dw.character.id });
       //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
@@ -42,11 +135,7 @@ setInterval(() => {
   }
 
   if (isLowHealth && !targetingMe) {
-    console.log(
-      dw.character.hp / dw.character.hpMax,
-      dw.character.hp,
-      dw.character.hpMax
-    );
+    console.log(healthPercentage, dw.character.hp, dw.character.hpMax);
     return;
   }
 
@@ -54,7 +143,9 @@ setInterval(() => {
     .filter(
       (entity) =>
         entity.l === dw.character.l &&
-        ((farmMobs && entity.ai) || (farmTrees && entity.tree))
+        ((farmMobs && entity.ai) ||
+          (farmTrees && entity.tree) ||
+          (farmOre && entity.ore))
     )
     .map((entity) => ({
       entity,
@@ -84,7 +175,19 @@ setInterval(() => {
     return;
   }
 
-  if (target.tree) {
+  if (target.ore) {
+    const inRange =
+      distancetoTarget <= dw.c.defaultSkills.mining.range; /* Attack */
+    if (!inRange) {
+      dw.move(target.x, target.y);
+    }
+
+    if (dw.isSkillReady("mine") && inRange) {
+      dw.setTarget(target);
+      console.log("mine", target);
+      dw.emit("mine", { id: target.id });
+    }
+  } else if (target.tree) {
     const inRange =
       distancetoTarget <= dw.c.defaultSkills.woodcutting.range; /* Attack */
     if (!inRange) {
@@ -92,6 +195,7 @@ setInterval(() => {
     }
 
     if (dw.isSkillReady("chop") && inRange) {
+      dw.setTarget(target);
       console.log("chop", target);
       dw.emit("chop", { id: target.id });
     }
@@ -104,9 +208,11 @@ setInterval(() => {
       moveToRandomValidPointNearCharacter();
     }
 
-    if (dw.isSkillReady(0) && inAttackRange) {
+    // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
+    if (dw.isSkillReady(1) && inAttackRange) {
+      dw.setTarget(target);
       console.log("attack");
-      dw.useSkill(0, target);
+      dw.useSkill(1, target);
     }
   }
 }, 500);
@@ -115,8 +221,7 @@ function moveToRandomValidPointNearCharacter() {
   // TODO: given dw.character with x and y properties construct a x by x grid of walkable tiles using dw.getTerrainAt({ x, y });
   // TODO: if an entity is on a tile, give that tile a higher danger as well as tiles in a radius around it
   // TODO: pick a random valid point with the lowest score and use dw.move(x,y) to move to that, making sure you don't cross tiles with high danger
-  const character = dw.character; // Assuming you have access to the character object
-  const gridSize = 15; // Adjust this value based on the desired size of the grid
+  const gridSize = 20; // Adjust this value based on the desired size of the grid
 
   // Calculate the center of the grid
   const centerX = Math.floor(gridSize / 2);
@@ -128,13 +233,13 @@ function moveToRandomValidPointNearCharacter() {
     for (let j = 0; j < gridSize; j++) {
       const terrain = dw.getTerrainAt({
         l: dw.character.l,
-        x: character.x - centerX + i,
-        y: character.y - centerY + j,
+        x: dw.character.x - centerX + i,
+        y: dw.character.y - centerY + j,
       });
       const tile = {
-        x: character.x - centerX + i,
-        y: character.y - centerY + j,
-        walkable: terrain === 0, // Assuming 0 represents walkable terrain
+        x: dw.character.x - centerX + i,
+        y: dw.character.y - centerY + j,
+        walkable: terrain === 0, // 0 represents walkable terrain
         danger: 0, // Initialize danger score for each tile
       };
       grid.push(tile);
@@ -148,12 +253,19 @@ function moveToRandomValidPointNearCharacter() {
       return;
     }
 
-    let dangerRadius = 1; // Adjust this value based on the desired radius of danger around entities
+    let dangerRadius = 2; // Adjust this value based on the desired radius of danger around entities
     let dangerIncrement = 1;
+
     if (entity.hostile && entity.targetId !== dw.character.id) {
       dangerRadius = 5;
       dangerIncrement = 2;
     }
+
+    if (entity.hostile && entity.level > dw.character.level) {
+      dangerRadius += (entity.level - dw.character.level) / 2;
+      dangerIncrement = 2;
+    }
+
     // TODO: adjust danger level with more than 1
     if (entity.l !== dw.character.l) return;
     grid.forEach((tile) => {
@@ -248,15 +360,21 @@ function getTerrainInStraightLine(p1, p2) {
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   const distance = Math.max(Math.abs(dx), Math.abs(dy));
+  if (distance === 0) {
+    return [];
+  }
 
   const terrainArray = [];
 
   for (let i = 0; i <= distance; i++) {
     const x = p1.x + Math.round((dx * i) / distance);
     const y = p1.y + Math.round((dy * i) / distance);
+    // console.log("getTerrainInStraightLine", distance, { l: p1.l, x, y });
+    if (x && y) {
+      const terrain = dw.getTerrainAt({ l: p1.l, x, y });
 
-    const terrain = dw.getTerrainAt({ l: p1.l, x, y });
-    terrainArray.push(terrain);
+      terrainArray.push(terrain);
+    }
   }
 
   //   console.log(terrainArray);
