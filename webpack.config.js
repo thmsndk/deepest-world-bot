@@ -1,13 +1,12 @@
 const path = require("path");
 
 module.exports = {
+  mode: "development",
+  devtool: false,
   entry: {
     thmsn: path.resolve(__dirname, "./src/thmsn.ts"),
     // 'dir2/foo' : path.resolve(__dirname, '/apps/dir2/index.js')
-    // bot: [
-    //   path.resolve(__dirname, "./src/bot.js"),
-    //   path.resolve(__dirname, "./src/draw.js"),
-    // ],
+    bot: path.resolve(__dirname, "./src/bot.js"),
   },
   output: {
     path: path.resolve(__dirname, "./dist"),
