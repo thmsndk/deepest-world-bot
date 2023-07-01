@@ -1,5 +1,5 @@
 dw.debug = 1;
-const farmMobs = false;
+const farmMobs = true;
 const farmTrees = true;
 const farmOre = false;
 const farmGems = true;
@@ -241,22 +241,38 @@ setInterval(async () => {
     // })),
   ];
 
+  const goal = snapToGrid(target.x, target.y, 0.5);
+
   if (!los) {
-    console.log("no los");
-    // TODO: pathfind and move to first point on path
-    moveToRandomValidPointNearCharacter(grid);
+    console.log("no los", start, goal);
+    // // TODO: pathfind and move to first point on path
+    // const path = await findPath(start, goal, 0.5); // causes game to freeze sometimes, limit iterations?
+    // drawingGroups["targetPath"].push({
+    //   type: "path",
+    //   points: path,
+    //   color: "#DA70D6",
+    //   strokeWidth: 4,
+    // });
+
+    // if (path.length > 1) {
+    //   const firstPoint = path[1];
+
+    //   dw.move(firstPoint.x, firstPoint.y);
+    // }
+
+    drunkenWalk();
+    // moveToRandomValidPointNearCharacter(grid);
     return;
   }
 
-  const goal = snapToGrid(target.x, target.y, 0.5);
   // const path = findLeastDangerousPath(grid, start, goal, 500);
-  const path = await findPath(start, goal, 0.5); // causes game to freeze
-  drawingGroups["targetPath"].push({
-    type: "path",
-    points: path,
-    color: "#DA70D6",
-    strokeWidth: 4,
-  });
+  // const path = await findPath(start, goal, 0.5); // causes game to freeze sometimes, limit iterations?
+  // drawingGroups["targetPath"].push({
+  //   type: "path",
+  //   points: path,
+  //   color: "#DA70D6",
+  //   strokeWidth: 4,
+  // });
 
   if (target.ore) {
     const inRange =
@@ -308,7 +324,13 @@ setInterval(async () => {
 //   "y": 86.62614437409958
 // }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function findPath(start, goal, resolution = 0.5, visualize = false) {
+async function findPath(
+  start,
+  goal,
+  resolution = 0.5,
+  maxOperations = 800,
+  visualize = false
+) {
   // console.log("findPath", start, goal);
   start = snapToGrid(start.x, start.y, resolution);
   goal = snapToGrid(goal.x, goal.y, resolution);
@@ -367,6 +389,7 @@ async function findPath(start, goal, resolution = 0.5, visualize = false) {
   const gScores = {}; // Cost from start to each tile
   const fScores = {}; // Total estimated cost from start to end through each tile
   const previous = {}; // Stores the previous tile in the path
+  
 
   function getKey({ x, y }) {
     return `${x}${y}`;
@@ -382,17 +405,19 @@ async function findPath(start, goal, resolution = 0.5, visualize = false) {
   function equalTiles(a, b) {
     return a.x === b.x && a.y === b.y;
   }
-
+  let operations = 0;
+  // Find the tile with the lowest fScore
+  let current = null;
+  let currentKey = null;
   try {
     // console.log("starting while loop");
-    while (openSet.size > 0) {
+
+    while (openSet.size > 0 && operations < maxOperations) {
+      operations++;
       // await sleep(500);
 
       // console.log("openSet", openSet);
 
-      // Find the tile with the lowest fScore
-      let current = null;
-      let currentKey = null;
       let lowestFScore = Infinity;
 
       if (visualize) {
@@ -514,7 +539,16 @@ async function findPath(start, goal, resolution = 0.5, visualize = false) {
   // console.log("Trace back the path");
   // Trace back the path
   const path = [];
-  let current = goal;
+  if (operations >= maxOperations) {
+    console.warn(
+      "too many operations, partial path found",
+      operations,
+      maxOperations,
+      path
+    );
+  } else {
+    current = goal;
+  }
 
   while (current) {
     path.unshift(current);
