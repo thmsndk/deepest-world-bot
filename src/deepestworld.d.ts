@@ -41,8 +41,8 @@ declare global {
      * @param to
      */
     distance(
-      from: { l: number; x: number; y: number },
-      to: { l: number; x: number; y: number }
+      from: { x: number; y: number },
+      to: { x: number; y: number }
     ): number;
 
     /**
@@ -83,6 +83,10 @@ declare global {
     on(eventName: string, cb: (data: unknown) => void);
 
     emit(eventName: "chop", data: { id: number });
+    emit(
+      eventName: "placeItem",
+      data: { bagIndex: number; x: number; y: number }
+    );
     emit(eventName: string, data: unknown);
 
     /**
@@ -130,6 +134,8 @@ type Character = BaseEntity & {
     mining: DefaultSkill;
   };
 
+  spawn: { l: number; x: number; y: number };
+
   mission: {
     item: {
       md: string;
@@ -143,11 +149,11 @@ type Character = BaseEntity & {
     /**
      * Percentage progress e.g. 6.0990909%
      */
-    progress: number
+    progress: number;
     /**
      * When the timeout happens
      */
-    timeoutAt: number
+    timeoutAt: number;
   };
 };
 

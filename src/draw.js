@@ -10,7 +10,11 @@ let drawingGroups = {};
 // Define the drawings collection
 let drawings = [];
 // Event handler for the "drawEnd" event
-dw.on("drawEnd", (ctx) => {
+dw.on("drawEnd", (ctx, cx, cy) => {
+  // using the client position makes the rendering less jittery
+  dw.character.x = cx;
+  dw.character.y = cy;
+
   for (const key in drawingGroups) {
     drawStuff(ctx, drawingGroups[key]);
   }
@@ -35,7 +39,8 @@ function drawStuff(ctx, drawings) {
         canvasCirclePoint.x,
         canvasCirclePoint.y,
         drawing.radius,
-        drawing.color
+        drawing.color,
+        drawing.strokeWidth
       );
     } else if (drawing.type === "rectangle") {
       const canvasRectanglePoint = mapPointToCanvas(
@@ -49,7 +54,8 @@ function drawStuff(ctx, drawings) {
         canvasRectanglePoint.y,
         drawing.width,
         drawing.height,
-        drawing.color
+        drawing.color,
+        drawing.strokeWidth
       );
     } else if (drawing.type === "line") {
       const canvasStartPoint = mapPointToCanvas(
@@ -68,13 +74,14 @@ function drawStuff(ctx, drawings) {
         canvasStartPoint.y,
         canvasEndPoint.x,
         canvasEndPoint.y,
-        drawing.color
+        drawing.color,
+        drawing.strokeWidth
       );
     } else if (drawing.type === "path") {
       const canvasPoints = drawing.points.map((point) =>
         mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, point)
       );
-      drawPath(ctx, canvasPoints, drawing.color);
+      drawPath(ctx, canvasPoints, drawing.color, drawing.strokeWidth);
     }
   });
 }

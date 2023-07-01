@@ -1,63 +1,102 @@
 dw.debug = 1;
-const farmMobs = true;
+const farmMobs = false;
 const farmTrees = true;
-const farmOre = true;
-const farmMissions = false;
+const farmOre = false;
+const farmGems = true;
+const farmMissions = true;
 const treeDistance = 10;
 
 // go to spawn
-//dw.move(dw.character.spawn.x,dw.character.spawn.y)
-// old spawn {l:0,x:58,y:70}
+function goHome() {
+  dw.move(dw.character.spawn.x, dw.character.spawn.y);
+}
+// Add to console
+top.goHome = goHome;
 
-setInterval(() => {
+// old spawn {l:0,x:58,y:70}
+const GEMS = ["amethyst", "ruby", "sapphire", "diamond", "emerald"];
+function isGem(entity) {
+  return GEMS.filter((g) => entity.md.indexOf(g) > -1)[0];
+}
+
+function getGemColor(entity) {
+  const gem = GEMS.filter((g) => entity.md.indexOf(g) > -1)[0];
+  switch (gem) {
+    case "amethyst":
+      return "#9966cc";
+    case "ruby":
+      return "#9B111E";
+    case "sapphire":
+      return "#0F52BA";
+    case "diamond":
+      return "#B9F2FF";
+    case "emerald":
+      return "#50C878";
+    default:
+      return "white";
+  }
+}
+
+setInterval(async () => {
+  drawingGroups["gems"] = [
+    ...dw.entities
+      .filter((e) => GEMS.some((g) => e.md.indexOf(g) > -1))
+      .map((e) => ({
+        type: "circle",
+        point: { x: e.x, y: e.y },
+        radius: 0.25,
+        color: getGemColor(e),
+        strokeWidth: 5,
+      })),
+  ];
   // TODO: don't enter too high lvl missions
   // Handle death in missions and joining it again
 
-  // const missionBoards = dw.entities.filter(
-  //   (entity) => entity.md === "missionBoard" && entity.storage.length > 0
-  // );
+  const missionBoards = dw.entities.filter(
+    (entity) => entity.md === "missionBoard" && entity.storage.length > 0
+  );
 
-  // if (dw.character.mission && farmMissions) {
-  //   const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
-  //   // const shouldAbandonMission =
-  //   //   dw.character.mission &&
-  //   //   dw.character.mission.progress < 100 &&
-  //   //   timeLeft <= 5 * 60000;
-  //   // // TODO: teleport when timer is getting too low
+  if (dw.character.mission && farmMissions) {
+    // const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
+    // const shouldAbandonMission =
+    //   dw.character.mission &&
+    //   dw.character.mission.progress < 100 &&
+    //   timeLeft <= 5 * 60000;
+    // // TODO: teleport when timer is getting too low
 
-  //   // if (shouldAbandonMission && missionBoards.length > 0) {
-  //   //   // TODO should probably find the correct mission board to abandon
-  //   //   dw.abandonMission();
-  //   // }
+    // if (shouldAbandonMission && missionBoards.length > 0) {
+    //   // TODO should probably find the correct mission board to abandon
+    //   dw.abandonMission();
+    // }
 
-  //   if (/*!shouldAbandonMission &&*/ missionBoards.length > 0) {
-  //     const board = missionBoards[0];
-  //     const inRange = dw.distance(dw.character, board) <= 1;
-  //     if (!inRange) {
-  //       dw.move(board.x, board.y);
-  //     } else {
-  //       dw.enterMission();
-  //     }
-  //   }
-  // } else {
-  //   if (missionBoards.length > 0 && farmOre && farmMissions) {
-  //     const board = missionBoards[0];
-  //     // TODO: find slot
-  //     for (let index = 0; index < board.storage.length; index++) {
-  //       const mission = board.storage[index];
-  //       if (mission) {
-  //         const inRange = dw.distance(dw.character, board) <= 2;
-  //         if (!inRange) {
-  //           dw.move(board.x, board.y);
-  //           return;
-  //         } else {
-  //           dw.acceptMission(board.id, index);
-  //         }
-  //         break;
-  //       }
-  //     }
-  //   }
-  // }
+    if (/*!shouldAbandonMission &&*/ missionBoards.length > 0) {
+      const board = missionBoards[0];
+      const inRange = dw.distance(dw.character, board) <= 1;
+      if (!inRange) {
+        dw.move(board.x, board.y);
+      } else {
+        dw.enterMission();
+      }
+    }
+  } else {
+    // if (missionBoards.length > 0 && farmOre && farmMissions) {
+    //   const board = missionBoards[0];
+    //   // TODO: find slot
+    //   for (let index = 0; index < board.storage.length; index++) {
+    //     const mission = board.storage[index];
+    //     if (mission) {
+    //       const inRange = dw.distance(dw.character, board) <= 2;
+    //       if (!inRange) {
+    //         dw.move(board.x, board.y);
+    //         return;
+    //       } else {
+    //         dw.acceptMission(board.id, index);
+    //       }
+    //       break;
+    //     }
+    //   }
+    // }
+  }
 
   // TODO z-index
   drawingGroups["spawnArea"] = [
@@ -147,7 +186,8 @@ setInterval(() => {
         entity.l === dw.character.l &&
         ((farmMobs && entity.ai) ||
           (farmTrees && entity.tree) ||
-          (farmOre && entity.ore))
+          (farmOre && entity.ore) ||
+          (farmGems && isGem(entity)))
     )
     .map((entity) => ({
       entity,
@@ -163,19 +203,60 @@ setInterval(() => {
   const target = targetingMe ?? closestEntity[0]?.entity;
 
   if (!target) {
-    console.log("no target");
-    moveToRandomValidPointNearCharacter(grid);
+    console.log("no target, drunken walk");
+    drunkenWalk();
     return;
   }
 
   const distancetoTarget = dw.distance(dw.character, target);
   const los = hasLineOfSight(target);
 
+  const start = snapToGrid(dw.character.x, dw.character.y, 0.5);
+  // const neigbors = getNeighbors(start, grid);
+
+  drawingGroups["targetPath"] = [
+    // {
+    //   type: "path",
+    //   points: path,
+    //   color: "#DA70D6",
+    // },
+    {
+      type: "circle",
+      point: { x: target.x, y: target.y },
+      radius: 0.25,
+      color: "#DA70D6",
+    },
+    {
+      type: "line",
+      startPoint: { x: dw.character.x, y: dw.character.y },
+      endPoint: { x: target.x, y: target.y },
+      color: !los ? "#F00" : "#00FF56",
+    },
+    // ...neigbors.map((tile) => ({
+    //   type: "rectangle",
+    //   point: { x: tile.x, y: tile.y },
+    //   width: 0.5 * 96,
+    //   height: 0.5 * 96,
+    //   color: "#354acc",
+    // })),
+  ];
+
   if (!los) {
     console.log("no los");
+    // TODO: pathfind and move to first point on path
     moveToRandomValidPointNearCharacter(grid);
     return;
   }
+
+  const goal = snapToGrid(target.x, target.y, 0.5);
+  // const path = findLeastDangerousPath(grid, start, goal, 500);
+  const path = await findPath(start, goal, 0.5); // causes game to freeze
+  drawingGroups["targetPath"].push({
+    type: "path",
+    points: path,
+    color: "#DA70D6",
+    strokeWidth: 4,
+  });
 
   if (target.ore) {
     const inRange =
@@ -186,7 +267,7 @@ setInterval(() => {
 
     if (dw.isSkillReady("mine") && inRange) {
       dw.setTarget(target);
-      console.log("mine", target);
+      // console.log("mine", target);
       dw.emit("mine", { id: target.id });
     }
   } else if (target.tree) {
@@ -198,7 +279,7 @@ setInterval(() => {
 
     if (dw.isSkillReady("chop") && inRange) {
       dw.setTarget(target);
-      console.log("chop", target);
+      // console.log("chop", target);
       dw.emit("chop", { id: target.id });
     }
   } else {
@@ -213,11 +294,249 @@ setInterval(() => {
     // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
     if (dw.isSkillReady(1) && inAttackRange) {
       dw.setTarget(target);
-      console.log("attack");
+      // console.log("attack");
       dw.useSkill(1, target);
     }
   }
 }, 500);
+// {
+//   "x": 62.97850713773158,
+//   "y": 86.62614437409958
+// }
+// {
+//   "x": 67.97850713773158,
+//   "y": 86.62614437409958
+// }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function findPath(start, goal, resolution = 0.5, visualize = false) {
+  // console.log("findPath", start, goal);
+  start = snapToGrid(start.x, start.y, resolution);
+  goal = snapToGrid(goal.x, goal.y, resolution);
+
+  // console.log("findPath snapped", start, goal);
+
+  function getNeighbours(tile, tiles, resolution = 0.5) {
+    if (!tile) return [];
+    const neighbours = [];
+    const { x, y } = tile;
+
+    // Define possible movement directions
+    const directions = [
+      { dx: -1, dy: 0 }, // Left
+      { dx: 1, dy: 0 }, // Right
+      { dx: 0, dy: -1 }, // Up
+      { dx: 0, dy: 1 }, // Down
+      { dx: -1, dy: -1 }, // Diagonal: Top-left
+      { dx: 1, dy: -1 }, // Diagonal: Top-right
+      { dx: -1, dy: 1 }, // Diagonal: Bottom-left
+      { dx: 1, dy: 1 }, // Diagonal: Bottom-right
+    ];
+
+    for (const direction of directions) {
+      const nx = x + direction.dx * resolution;
+      const ny = y + direction.dy * resolution;
+
+      const neighbourKey = getKey(tile);
+      const existingTile = tiles[neighbourKey];
+
+      if (!existingTile) {
+        const neighbourTile = snapToGrid(nx, ny, resolution);
+        // TODO: collision detection? e.g. boxes and what not.
+        // console.log("getNeighbours", { x, y }, neighbourTile);
+        const terrain =
+          nx && ny
+            ? dw.getTerrainAt({ l: dw.character.l, x: nx, y: ny })
+            : null;
+        const isWalkable = terrain === 0; /* Air / Walkable */
+
+        if (isWalkable) {
+          tiles.set(neighbourKey, neighbourTile);
+          neighbours.push(neighbourTile);
+        }
+      } else {
+        neighbours.push(existingTile);
+      }
+    }
+
+    return neighbours;
+  }
+
+  const openSet = new Set(); // Tiles to be evaluated
+  const closedSet = new Set(); // Evaluated tiles
+  const tiles = new Map();
+  const gScores = {}; // Cost from start to each tile
+  const fScores = {}; // Total estimated cost from start to end through each tile
+  const previous = {}; // Stores the previous tile in the path
+
+  function getKey({ x, y }) {
+    return `${x}${y}`;
+  }
+
+  const startKey = getKey(start);
+  gScores[startKey] = 0;
+  fScores[startKey] = heuristicCost(start, goal); // Heuristic estimate for start
+
+  tiles.set(startKey, start);
+  openSet.add(start);
+
+  function equalTiles(a, b) {
+    return a.x === b.x && a.y === b.y;
+  }
+
+  try {
+    // console.log("starting while loop");
+    while (openSet.size > 0) {
+      // await sleep(500);
+
+      // console.log("openSet", openSet);
+
+      // Find the tile with the lowest fScore
+      let current = null;
+      let currentKey = null;
+      let lowestFScore = Infinity;
+
+      if (visualize) {
+        drawingGroups["pathfinding"] = [
+          {
+            type: "circle",
+            point: { x: start.x, y: start.y },
+            radius: 0.25,
+            color: "#00FF00",
+          },
+          {
+            type: "circle",
+            point: { x: goal.x, y: goal.y },
+            radius: 0.25,
+            color: "#FF00EA",
+          },
+        ];
+      }
+
+      for (const tile of openSet) {
+        const key = getKey(tile);
+        const fScore = fScores[key];
+        // console.log(key, tile, )
+        if (fScore < lowestFScore) {
+          // console.log(`${fScore}<${lowestFScore} new current tile`, tile);
+          lowestFScore = fScore;
+          current = tile;
+          currentKey = getKey(tile);
+        }
+
+        if (visualize) {
+          drawingGroups["pathfinding"].push(
+            // render open set
+            {
+              type: "rectangle",
+              point: { x: tile.x, y: tile.y },
+              width: resolution * 96,
+              height: resolution * 96,
+              color: "#FFFFFF",
+            }
+          );
+        }
+      }
+
+      if (visualize) {
+        drawingGroups["pathfinding"].push(
+          // render current node
+          {
+            type: "rectangle",
+            point: { x: dw.character.spawn.x, y: dw.character.spawn.y },
+            width: resolution * 96,
+            height: resolution * 96,
+            color: "#00FF00",
+          }
+        );
+      }
+
+      // Exit the loop if destination reached or danger threshold exceeded
+      // console.log(
+      //   "Have we reached the end?",
+      //   current,
+      //   goal,
+      //   current === goal,
+      //   equalTiles(current, goal)
+      // );
+      // TODO: look up danger in danger grid.
+      if (equalTiles(current, goal) /*|| current.danger > dangerThreshold*/) {
+        // console.log("reached end");
+        break;
+      }
+
+      // console.log("remove from open set", current, openSet.delete(current));
+      closedSet.add(currentKey);
+
+      const neighbours = getNeighbours(current, tiles, resolution);
+      for (const neighbour of neighbours) {
+        const neighbourKey = getKey(neighbour);
+
+        // Skip neighbors already evaluated or with danger level exceeding the threshold
+        if (
+          closedSet.has(neighbourKey) /*|| neighbor.danger > dangerThreshold*/
+        ) {
+          continue;
+        }
+
+        if (visualize) {
+          // TODO: render neigbours
+          drawingGroups["pathfinding"].push(
+            // render open set
+            {
+              type: "rectangle",
+              point: { x: neighbour.x, y: neighbour.y },
+              width: resolution * 96,
+              height: resolution * 96,
+              color: "#1F00FF",
+            }
+          );
+        }
+
+        const tentativeGScore = gScores[currentKey]; /*+ neighbor.danger*/
+
+        if (!openSet.has(neighbour)) {
+          openSet.add(neighbour);
+        } else if (tentativeGScore >= gScores[neighbourKey]) {
+          continue;
+        }
+
+        // Update scores and previous tile
+        previous[neighbourKey] = current;
+        gScores[neighbourKey] = tentativeGScore;
+        fScores[neighbourKey] =
+          gScores[neighbourKey] + heuristicCost(neighbour, goal);
+      }
+    }
+  } catch (error) {
+    console.error("failed while loop", error);
+  }
+
+  // console.log("Trace back the path");
+  // Trace back the path
+  const path = [];
+  let current = goal;
+
+  while (current) {
+    path.unshift(current);
+    current = previous[getKey(current)];
+  }
+
+  // console.log("path", path);
+  if (visualize) {
+    drawingGroups["pathfinding"].push({
+      type: "path",
+      points: path,
+      color: "#DA70D6",
+      strokeWidth: 5,
+    });
+  }
+
+  // await sleep(5000);
+
+  return path;
+}
+// Add to console
+top.findPath = findPath;
 
 function generateGrid(gridSize = 30, resolution = 0.5) {
   gridSize = gridSize * resolution;
@@ -225,19 +544,28 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
   const centerX = Math.floor(gridSize / 2);
   const centerY = Math.floor(gridSize / 2);
 
+  // TODO: we could construct an actual matrix, unsure about decimals though, could also just be a Map?
   // Create a grid of walkable tiles centered around the character
   const grid = [];
   for (let i = 0; i < gridSize; i += resolution) {
     for (let j = 0; j < gridSize; j += resolution) {
+      const { x, y } = snapToGrid(
+        dw.character.x - centerX + i,
+        dw.character.y - centerY + j,
+        resolution
+      );
+
       const terrain = dw.getTerrainAt({
         l: dw.character.l,
-        x: dw.character.x - centerX + i,
-        y: dw.character.y - centerY + j,
+        x: x,
+        y: y,
       });
+
+      if (terrain > 0) continue;
+
       const tile = {
-        x: dw.character.x - centerX + i,
-        y: dw.character.y - centerY + j,
-        walkable: terrain === 0, // 0 represents walkable terrain
+        x: x,
+        y: y,
         danger: 0, // Initialize danger score for each tile
       };
       grid.push(tile);
@@ -276,11 +604,7 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
     });
   });
 
-  const getTileColor = ({ walkable, danger }) => {
-    if (!walkable) {
-      return "black";
-    }
-
+  const getTileColor = ({ danger }) => {
     if (danger === 0) {
       return "white";
     }
@@ -297,18 +621,47 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
       return "red";
     }
   };
-  drawingGroups["dangerGrid"] = [
-    ...grid
-      .filter((tile) => tile.walkable)
-      .map((tile) => ({
-        type: "rectangle",
-        point: { x: tile.x, y: tile.y },
-        width: resolution * 96,
-        height: resolution * 96,
-        color: getTileColor(tile),
-      })),
-  ];
+  // drawingGroups["dangerGrid"] = [
+  //   ...grid.map((tile) => ({
+  //     type: "rectangle",
+  //     point: { x: tile.x, y: tile.y },
+  //     width: resolution * 96,
+  //     height: resolution * 96,
+  //     color: getTileColor(tile),
+  //   })),
+  // ];
   return grid;
+}
+
+function drunkenWalk() {
+  // Define the character's initial position
+  let { x, y } = dw.character;
+
+  // Determine the next move randomly
+  let directions = [
+    { dx: -1, dy: 0 }, // Left
+    { dx: 1, dy: 0 }, // Right
+    { dx: 0, dy: -1 }, // Up
+    { dx: 0, dy: 1 }, // Down
+    { dx: -1, dy: -1 }, // Diagonal: Top-left
+    { dx: 1, dy: -1 }, // Diagonal: Top-right
+    { dx: -1, dy: 1 }, // Diagonal: Bottom-left
+    { dx: 1, dy: 1 }, // Diagonal: Bottom-right
+  ];
+
+  directions.filter(
+    (pos) =>
+      dw.getTerrainAt({ l: dw.character.l, ...pos }) === 0 /* Air / Walkable */
+  );
+
+  const randomDirection =
+    directions[Math.floor(Math.random() * directions.length)];
+
+  // Update the character's position
+  x += randomDirection.dx;
+  y += randomDirection.dy;
+
+  dw.move(x, y);
 }
 
 function moveToRandomValidPointNearCharacter(grid) {
@@ -317,11 +670,8 @@ function moveToRandomValidPointNearCharacter(grid) {
   // TODO: pick a random valid point with the lowest score and use dw.move(x,y) to move to that, making sure you don't cross tiles with high danger
 
   // Find valid points with the lowest score
-  const validPoints = grid.filter((tile) => tile.walkable);
-  const lowestDanger = Math.min(...validPoints.map((tile) => tile.danger));
-  const safestPoints = validPoints.filter(
-    (tile) => tile.danger === lowestDanger
-  );
+  const lowestDanger = Math.min(...grid.map((tile) => tile.danger));
+  const safestPoints = grid.filter((tile) => tile.danger === lowestDanger);
 
   // Pick a random point from the safest points
   const randomIndex = Math.floor(Math.random() * safestPoints.length);
@@ -400,7 +750,7 @@ function hasLineOfSight(target) {
   return !straightPath.some((x) => x > 0 /* Air / Walkable */);
 }
 
-function getNeighbors(tile, grid, resolution) {
+function getNeighbors(tile, grid, resolution = 0.5) {
   const neighbors = [];
   const { x, y } = tile;
 
@@ -413,7 +763,7 @@ function getNeighbors(tile, grid, resolution) {
     { dx: -1, dy: -1 }, // Diagonal: Top-left
     { dx: 1, dy: -1 }, // Diagonal: Top-right
     { dx: -1, dy: 1 }, // Diagonal: Bottom-left
-    { dx: 1, dy: 1 } // Diagonal: Bottom-right
+    { dx: 1, dy: 1 }, // Diagonal: Bottom-right
   ];
 
   for (const direction of directions) {
@@ -421,36 +771,46 @@ function getNeighbors(tile, grid, resolution) {
     const ny = y + direction.dy * resolution;
 
     // Check if the neighboring tile is within the grid bounds
-    if (nx >= 0 && nx < grid[0].length && ny >= 0 && ny < grid.length) {
-      const neighbor = grid[ny][nx];
-      if (neighbor.walkable) {
-        neighbors.push(neighbor);
-      }
+    // if (nx >= 0 && nx < grid[0].length && ny >= 0 && ny < grid.length) {
+    const neighbor = grid.find((t) => t.x === nx && t.y === ny); // inefficient, should tiles contain links to neighbours?
+    if (neighbor) {
+      neighbors.push(neighbor);
     }
+    // }
   }
 
   return neighbors;
 }
 
+function snapToGrid(x, y, resolution = 0.5) {
+  const snappedX = Math.round(x / resolution) * resolution;
+  const snappedY = Math.round(y / resolution) * resolution;
+  return { x: snappedX, y: snappedY };
+}
+
 /**
- * 
+ *
  * gScores: This object stores the cost from the start tile to each tile on the grid. Initially, all scores are set to Infinity except for the start tile, which is set to 0. As the algorithm progresses, the actual cost from the start to each tile is updated.
  * fScores: This object stores the total estimated cost from the start tile to the end tile through each tile on the grid. It is the sum of the gScore (actual cost from the start) and the heuristic estimate from the current tile to the end tile. Initially, all scores are set to Infinity except for the start tile, which is set to the heuristic estimate.
  * In each iteration of the A* algorithm, the tile with the lowest fScore is chosen for evaluation. The fScore acts as a priority value, guiding the search towards tiles that are likely to lead to the least dangerous path.
  * The gScore is updated for each neighbor of the current tile based on the cumulative danger level from the start tile to the current tile. If a better (lower) gScore is found for a neighbor, it means that the current path to that neighbor is less dangerous, and the gScore and fScore are updated accordingly.
  * The fScore is updated by adding the gScore to the heuristic estimate for each neighbor. This gives an estimate of the total cost from the start to the end through the current neighbor.
- * @param {*} grid 
- * @param {*} start 
- * @param {*} end 
- * @param {*} dangerThreshold 
- * @returns 
+ * @param {*} grid
+ * @param {*} start
+ * @param {*} end
+ * @param {*} dangerThreshold
+ * @returns
  */
-function findLeastDangerousPath(grid, start, end, dangerThreshold) {
+function findLeastDangerousPath(grid, p1, p2, dangerThreshold) {
   const openSet = new Set(); // Tiles to be evaluated
   const closedSet = new Set(); // Evaluated tiles
   const gScores = {}; // Cost from start to each tile
   const fScores = {}; // Total estimated cost from start to end through each tile
   const previous = {}; // Stores the previous tile in the path
+
+  const start = grid.find((t) => t.x === p1.x && t.y === p1.y);
+  const end = grid.find((t) => t.x === p2.x && t.y === p2.y);
+  // console.log("findLeastDangerousPath", p1, start, p2, end, grid);
 
   // Initialize scores
   for (const tile of grid) {
@@ -525,7 +885,6 @@ function heuristicCost(tileA, tileB) {
   const dy = Math.abs(tileA.y - tileB.y);
   return dx + dy;
 }
-
 
 // // Usage example
 // const p1 = { l: dw.character.l, x: dw.character.x, y: dw.character.y };
