@@ -651,7 +651,11 @@ function drunkenWalk() {
 
   directions.filter(
     (pos) =>
-      dw.getTerrainAt({ l: dw.character.l, ...pos }) === 0 /* Air / Walkable */
+      dw.getTerrainAt({
+        l: dw.character.l,
+        x: dw.character.x + pos.dx,
+        y: dw.character.y + pos.dy,
+      }) === 0 /* Air / Walkable */
   );
 
   const randomDirection =
