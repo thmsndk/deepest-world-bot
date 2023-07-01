@@ -1,8 +1,8 @@
 dw.debug = 1;
-const farmMobs = false;
+const farmMobs = true;
 const farmTrees = true;
 const farmOre = true;
-const farmMissions = true;
+const farmMissions = false;
 const treeDistance = 10;
 
 // go to spawn
@@ -13,51 +13,51 @@ setInterval(() => {
   // TODO: don't enter too high lvl missions
   // Handle death in missions and joining it again
 
-  const missionBoards = dw.entities.filter(
-    (entity) => entity.md === "missionBoard" && entity.storage.length > 0
-  );
+  // const missionBoards = dw.entities.filter(
+  //   (entity) => entity.md === "missionBoard" && entity.storage.length > 0
+  // );
 
-  if (dw.character.mission && farmMissions) {
-    const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
-    const shouldAbandonMission =
-      dw.character.mission &&
-      dw.character.mission.progress < 100 &&
-      timeLeft <= 5 * 60000;
-    // TODO: teleport when timer is getting too low
+  // if (dw.character.mission && farmMissions) {
+  //   const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
+  //   // const shouldAbandonMission =
+  //   //   dw.character.mission &&
+  //   //   dw.character.mission.progress < 100 &&
+  //   //   timeLeft <= 5 * 60000;
+  //   // // TODO: teleport when timer is getting too low
 
-    if (shouldAbandonMission && missionBoards.length > 0) {
-      // TODO should probably find the correct mission board to abandon
-      dw.abandonMission();
-    }
+  //   // if (shouldAbandonMission && missionBoards.length > 0) {
+  //   //   // TODO should probably find the correct mission board to abandon
+  //   //   dw.abandonMission();
+  //   // }
 
-    if (!shouldAbandonMission && missionBoards.length > 0) {
-      const board = missionBoards[0];
-      const inRange = dw.distance(dw.character, board) <= 1;
-      if (!inRange) {
-        dw.move(board.x, board.y);
-      } else {
-        dw.enterMission();
-      }
-    }
-  } else {
-    if (missionBoards.length > 0 && farmOre && farmMissions) {
-      const board = missionBoards[0];
-      // TODO: find slot
-      for (let index = 0; index < board.storage.length; index++) {
-        const mission = board.storage[index];
-        if (mission) {
-          const inRange = dw.distance(dw.character, board) <= 2;
-          if (!inRange) {
-            dw.move(board.x, board.y);
-            return;
-          } else {
-            dw.acceptMission(board.id, index);
-          }
-          break;
-        }
-      }
-    }
-  }
+  //   if (/*!shouldAbandonMission &&*/ missionBoards.length > 0) {
+  //     const board = missionBoards[0];
+  //     const inRange = dw.distance(dw.character, board) <= 1;
+  //     if (!inRange) {
+  //       dw.move(board.x, board.y);
+  //     } else {
+  //       dw.enterMission();
+  //     }
+  //   }
+  // } else {
+  //   if (missionBoards.length > 0 && farmOre && farmMissions) {
+  //     const board = missionBoards[0];
+  //     // TODO: find slot
+  //     for (let index = 0; index < board.storage.length; index++) {
+  //       const mission = board.storage[index];
+  //       if (mission) {
+  //         const inRange = dw.distance(dw.character, board) <= 2;
+  //         if (!inRange) {
+  //           dw.move(board.x, board.y);
+  //           return;
+  //         } else {
+  //           dw.acceptMission(board.id, index);
+  //         }
+  //         break;
+  //       }
+  //     }
+  //   }
+  // }
 
   // TODO z-index
   drawingGroups["spawnArea"] = [
@@ -75,6 +75,8 @@ setInterval(() => {
       color: "#00FF00",
     },
   ];
+
+  const grid = generateGrid();
 
   const targetingMe = dw.findClosestMonster(
     (entity) => entity.targetId === dw.character.id
@@ -162,7 +164,7 @@ setInterval(() => {
 
   if (!target) {
     console.log("no target");
-    moveToRandomValidPointNearCharacter();
+    moveToRandomValidPointNearCharacter(grid);
     return;
   }
 
@@ -171,7 +173,7 @@ setInterval(() => {
 
   if (!los) {
     console.log("no los");
-    moveToRandomValidPointNearCharacter();
+    moveToRandomValidPointNearCharacter(grid);
     return;
   }
 
@@ -205,7 +207,7 @@ setInterval(() => {
     if (!inAttackRange) {
       dw.move(target.x, target.y);
     } else {
-      moveToRandomValidPointNearCharacter();
+      moveToRandomValidPointNearCharacter(grid);
     }
 
     // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
@@ -217,20 +219,16 @@ setInterval(() => {
   }
 }, 500);
 
-function moveToRandomValidPointNearCharacter() {
-  // TODO: given dw.character with x and y properties construct a x by x grid of walkable tiles using dw.getTerrainAt({ x, y });
-  // TODO: if an entity is on a tile, give that tile a higher danger as well as tiles in a radius around it
-  // TODO: pick a random valid point with the lowest score and use dw.move(x,y) to move to that, making sure you don't cross tiles with high danger
-  const gridSize = 20; // Adjust this value based on the desired size of the grid
-
+function generateGrid(gridSize = 30, resolution = 0.5) {
+  gridSize = gridSize * resolution;
   // Calculate the center of the grid
   const centerX = Math.floor(gridSize / 2);
   const centerY = Math.floor(gridSize / 2);
 
   // Create a grid of walkable tiles centered around the character
   const grid = [];
-  for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
+  for (let i = 0; i < gridSize; i += resolution) {
+    for (let j = 0; j < gridSize; j += resolution) {
       const terrain = dw.getTerrainAt({
         l: dw.character.l,
         x: dw.character.x - centerX + i,
@@ -249,7 +247,7 @@ function moveToRandomValidPointNearCharacter() {
   // Calculate danger score for each tile based on nearby entities
   const entities = dw.entities; // Assuming you have access to the list of entities
   entities.forEach((entity) => {
-    if (entity.tree) {
+    if (!entity.ai) {
       return;
     }
 
@@ -257,7 +255,7 @@ function moveToRandomValidPointNearCharacter() {
     let dangerIncrement = 1;
 
     if (entity.hostile && entity.targetId !== dw.character.id) {
-      dangerRadius = 5;
+      dangerRadius += 1;
       dangerIncrement = 2;
     }
 
@@ -278,13 +276,19 @@ function moveToRandomValidPointNearCharacter() {
     });
   });
 
-  const getTileColor = (danger) => {
+  const getTileColor = ({ walkable, danger }) => {
+    if (!walkable) {
+      return "black";
+    }
+
     if (danger === 0) {
       return "white";
     }
+
     if (danger <= 1) {
       return "yellow";
     }
+
     if (danger === 2) {
       return "orange";
     }
@@ -294,14 +298,23 @@ function moveToRandomValidPointNearCharacter() {
     }
   };
   drawingGroups["dangerGrid"] = [
-    ...grid.map((tile) => ({
-      type: "rectangle",
-      point: { x: tile.x, y: tile.y },
-      width: 96,
-      height: 96,
-      color: getTileColor(tile.danger),
-    })),
+    ...grid
+      .filter((tile) => tile.walkable)
+      .map((tile) => ({
+        type: "rectangle",
+        point: { x: tile.x, y: tile.y },
+        width: resolution * 96,
+        height: resolution * 96,
+        color: getTileColor(tile),
+      })),
   ];
+  return grid;
+}
+
+function moveToRandomValidPointNearCharacter(grid) {
+  // TODO: given dw.character with x and y properties construct a x by x grid of walkable tiles using dw.getTerrainAt({ x, y });
+  // TODO: if an entity is on a tile, give that tile a higher danger as well as tiles in a radius around it
+  // TODO: pick a random valid point with the lowest score and use dw.move(x,y) to move to that, making sure you don't cross tiles with high danger
 
   // Find valid points with the lowest score
   const validPoints = grid.filter((tile) => tile.walkable);
@@ -387,115 +400,132 @@ function hasLineOfSight(target) {
   return !straightPath.some((x) => x > 0 /* Air / Walkable */);
 }
 
-function findPath(p1, p2) {
-  // Define helper functions
+function getNeighbors(tile, grid, resolution) {
+  const neighbors = [];
+  const { x, y } = tile;
 
-  // Heuristic function to estimate the distance between two points
-  function heuristic(node) {
-    const dx = Math.abs(node.x - p2.x);
-    const dy = Math.abs(node.y - p2.y);
-    return dx + dy;
-  }
+  // Define possible movement directions
+  const directions = [
+    { dx: -1, dy: 0 }, // Left
+    { dx: 1, dy: 0 }, // Right
+    { dx: 0, dy: -1 }, // Up
+    { dx: 0, dy: 1 }, // Down
+    { dx: -1, dy: -1 }, // Diagonal: Top-left
+    { dx: 1, dy: -1 }, // Diagonal: Top-right
+    { dx: -1, dy: 1 }, // Diagonal: Bottom-left
+    { dx: 1, dy: 1 } // Diagonal: Bottom-right
+  ];
 
-  // Function to check if a point is walkable
-  function isWalkable(node) {
-    const terrain = dw.getTerrainAt({ l: node.l, x: node.x, y: node.y });
-    return terrain === 0;
-  }
+  for (const direction of directions) {
+    const nx = x + direction.dx * resolution;
+    const ny = y + direction.dy * resolution;
 
-  // A* algorithm implementation
-  function aStar() {
-    const openSet = [p1]; // Nodes to be evaluated
-    const cameFrom = {}; // Parent nodes for each node
-    const gScore = { [getKey(p1)]: 0 }; // Cost from start node to each node
-    const fScore = { [getKey(p1)]: heuristic(p1) }; // Estimated total cost from start node to goal
-
-    while (openSet.length > 0) {
-      // Find the node with the lowest fScore
-      let currentNode = openSet.reduce((a, b) =>
-        fScore[getKey(a)] < fScore[getKey(b)] ? a : b
-      );
-
-      if (
-        currentNode.l === p2.l &&
-        currentNode.x === p2.x &&
-        currentNode.y === p2.y
-      ) {
-        // Reached the goal, reconstruct the path
-        return reconstructPath(cameFrom, currentNode);
-      }
-
-      openSet.splice(openSet.indexOf(currentNode), 1); // Remove current node from openSet
-
-      // Get the neighbors of the current node
-      const neighbors = getNeighbors(currentNode);
-
-      for (const neighbor of neighbors) {
-        const neighborKey = getKey(neighbor);
-        const tentativeGScore = gScore[getKey(currentNode)] + 1; // Assuming each step has a cost of 1
-
-        if (!isWalkable(neighbor) || tentativeGScore >= gScore[neighborKey]) {
-          continue; // Skip this neighbor
-        }
-
-        // This path is the best until now, record it
-        cameFrom[neighborKey] = currentNode;
-        gScore[neighborKey] = tentativeGScore;
-        fScore[neighborKey] = tentativeGScore + heuristic(neighbor);
-
-        if (!openSet.includes(neighbor)) {
-          openSet.push(neighbor); // Add neighbor to openSet
-        }
+    // Check if the neighboring tile is within the grid bounds
+    if (nx >= 0 && nx < grid[0].length && ny >= 0 && ny < grid.length) {
+      const neighbor = grid[ny][nx];
+      if (neighbor.walkable) {
+        neighbors.push(neighbor);
       }
     }
-
-    // No path found
-    return null;
   }
 
-  // Helper function to get a unique key for a node
-  function getKey(node) {
-    return `${node.l}-${node.x}-${node.y}`;
-  }
-
-  // Helper function to get the neighbors of a node
-  function getNeighbors(node) {
-    const neighbors = [];
-    const offsets = [
-      { x: -1, y: 0 },
-      { x: 1, y: 0 },
-      { x: 0, y: -1 },
-      { x: 0, y: 1 },
-    ]; // Possible movement directions
-
-    for (const offset of offsets) {
-      const neighbor = {
-        l: node.l,
-        x: node.x + offset.x,
-        y: node.y + offset.y,
-      };
-      neighbors.push(neighbor);
-    }
-
-    return neighbors;
-  }
-
-  // Helper function to reconstruct the path
-  function reconstructPath(cameFrom, currentNode) {
-    const path = [currentNode];
-    let current = currentNode;
-
-    while (cameFrom[getKey(current)]) {
-      current = cameFrom[getKey(current)];
-      path.unshift(current);
-    }
-
-    return path;
-  }
-
-  // Call the A* algorithm to find the path
-  return aStar();
+  return neighbors;
 }
+
+/**
+ * 
+ * gScores: This object stores the cost from the start tile to each tile on the grid. Initially, all scores are set to Infinity except for the start tile, which is set to 0. As the algorithm progresses, the actual cost from the start to each tile is updated.
+ * fScores: This object stores the total estimated cost from the start tile to the end tile through each tile on the grid. It is the sum of the gScore (actual cost from the start) and the heuristic estimate from the current tile to the end tile. Initially, all scores are set to Infinity except for the start tile, which is set to the heuristic estimate.
+ * In each iteration of the A* algorithm, the tile with the lowest fScore is chosen for evaluation. The fScore acts as a priority value, guiding the search towards tiles that are likely to lead to the least dangerous path.
+ * The gScore is updated for each neighbor of the current tile based on the cumulative danger level from the start tile to the current tile. If a better (lower) gScore is found for a neighbor, it means that the current path to that neighbor is less dangerous, and the gScore and fScore are updated accordingly.
+ * The fScore is updated by adding the gScore to the heuristic estimate for each neighbor. This gives an estimate of the total cost from the start to the end through the current neighbor.
+ * @param {*} grid 
+ * @param {*} start 
+ * @param {*} end 
+ * @param {*} dangerThreshold 
+ * @returns 
+ */
+function findLeastDangerousPath(grid, start, end, dangerThreshold) {
+  const openSet = new Set(); // Tiles to be evaluated
+  const closedSet = new Set(); // Evaluated tiles
+  const gScores = {}; // Cost from start to each tile
+  const fScores = {}; // Total estimated cost from start to end through each tile
+  const previous = {}; // Stores the previous tile in the path
+
+  // Initialize scores
+  for (const tile of grid) {
+    gScores[tile] = Infinity;
+    fScores[tile] = Infinity;
+    previous[tile] = null;
+  }
+
+  gScores[start] = 0;
+  fScores[start] = heuristicCost(start, end); // Heuristic estimate for start
+
+  openSet.add(start);
+
+  while (openSet.size > 0) {
+    // Find the tile with the lowest fScore
+    let current = null;
+    let lowestFScore = Infinity;
+
+    for (const tile of openSet) {
+      if (fScores[tile] < lowestFScore) {
+        lowestFScore = fScores[tile];
+        current = tile;
+      }
+    }
+
+    // Exit the loop if destination reached or danger threshold exceeded
+    if (current === end || current.danger > dangerThreshold) {
+      break;
+    }
+
+    openSet.delete(current);
+    closedSet.add(current);
+
+    const neighbors = getNeighbors(current, grid);
+    for (const neighbor of neighbors) {
+      // Skip neighbors already evaluated or with danger level exceeding the threshold
+      if (closedSet.has(neighbor) || neighbor.danger > dangerThreshold) {
+        continue;
+      }
+
+      const tentativeGScore = gScores[current] + neighbor.danger;
+
+      if (!openSet.has(neighbor)) {
+        openSet.add(neighbor);
+      } else if (tentativeGScore >= gScores[neighbor]) {
+        continue;
+      }
+
+      // Update scores and previous tile
+      previous[neighbor] = current;
+      gScores[neighbor] = tentativeGScore;
+      fScores[neighbor] = gScores[neighbor] + heuristicCost(neighbor, end);
+    }
+  }
+
+  // Trace back the path
+  const path = [];
+  let current = end;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = previous[current];
+  }
+
+  return path;
+}
+
+// Helper function to calculate the heuristic cost
+function heuristicCost(tileA, tileB) {
+  // Manhattan distance heuristic
+  const dx = Math.abs(tileA.x - tileB.x);
+  const dy = Math.abs(tileA.y - tileB.y);
+  return dx + dy;
+}
+
 
 // // Usage example
 // const p1 = { l: dw.character.l, x: dw.character.x, y: dw.character.y };
