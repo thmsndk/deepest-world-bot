@@ -102,7 +102,7 @@ setInterval(async () => {
     // TODO: add mission to missionBoard
   }
 
-  if (dw.character.mission && farmMissions) {
+  if (dw.character.mission) {
     // const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
     // const shouldAbandonMission =
     //   dw.character.mission &&
@@ -127,23 +127,62 @@ setInterval(async () => {
       }
     }
   } else {
-    // if (missionBoards.length > 0 && farmOre && farmMissions) {
-    //   const board = missionBoards[0];
-    //   // TODO: find slot
-    //   for (let index = 0; index < board.storage.length; index++) {
-    //     const mission = board.storage[index];
-    //     if (mission) {
-    //       const inRange = dw.distance(dw.character, board) <= 2;
-    //       if (!inRange) {
-    //         dw.move(board.x, board.y);
-    //         return;
-    //       } else {
-    //         dw.acceptMission(board.id, index);
-    //       }
-    //       break;
-    //     }
-    //   }
-    // }
+    if (missionBoards.length > 0 && farmMissions) {
+      const board = missionBoards[0];
+      const boardInRange = dw.distance(dw.character, board) <= 2;
+
+      const missionsInBag = dw.character.bag
+        .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
+        .filter(
+          (x) =>
+            x.item &&
+            x.item.md.endsWith("Mission") &&
+            x.item.qual <= 5 && // only auto add up to lvl 5 missions
+            x.item.r < 3 &&
+            !x.item.n
+        );
+
+      // populate missionboard
+      if (missionsInBag.length > 0) {
+        for (let index = 0; index < board.storage.length; index++) {
+          const mission = board.storage[index];
+          if (!mission) {
+            if (!boardInRange) {
+              dw.move(board.x, board.y);
+              return;
+            } else {
+              const missionToAdd = missionsInBag.pop();
+              dw.moveItem(
+                "bag",
+                missionToAdd.bagIndex,
+                "storage",
+                index,
+                null,
+                board.id
+              );
+            }
+          }
+          // TODO: do we have a mission below lvl 6 in our bag?
+
+          // TODO: move into range of board
+          // TODO add mission to board
+        }
+
+        // accept mission
+        for (let index = 0; index < board.storage.length; index++) {
+          const mission = board.storage[index];
+          if (mission) {
+            if (!boardInRange) {
+              dw.move(board.x, board.y);
+              return;
+            } else {
+              dw.acceptMission(board.id, index);
+            }
+            break;
+          }
+        }
+      }
+    }
   }
 
   // TODO z-index
@@ -931,7 +970,6 @@ function snapToGrid(x, y, resolution = 0.5) {
   const snappedY = Math.round(y / resolution) * resolution;
   return { x: snappedX, y: snappedY };
 }
-
 
 // Helper function to calculate the heuristic cost
 function heuristicCost(tileA, tileB) {
