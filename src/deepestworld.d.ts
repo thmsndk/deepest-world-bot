@@ -100,6 +100,18 @@ declare global {
      */
     acceptMission(id: number, index: number): void;
     abandonMission(): void;
+
+    /**
+     * Your character bag names are: 'bag', 'crafting', 'abilities', 'abilityBag'.
+     * Other objects bag names are: 'storage'.
+     * @param bagFrom
+     * @param indexFrom
+     * @param bagTo
+     * @param indexTo
+     * @param idFrom
+     * @param idTo can be omitted if transfering to your character
+     */
+    moveItem(bagFrom:string, indexFrom:number, bagTo:string, indexTo:number, idFrom:number, idTo?:number);
   };
 }
 
@@ -129,6 +141,11 @@ type Character = BaseEntity & {
   /** Characters maximum health */
   hpMax: number;
 
+  /**
+   * Set if the player is in combat
+   */
+  combat?: true;
+
   defaultSkills: {
     woodcutting: DefaultSkill;
     mining: DefaultSkill;
@@ -155,6 +172,29 @@ type Character = BaseEntity & {
      */
     timeoutAt: number;
   };
+
+  bag: Array<{
+    md: string;
+    n?: number;
+    /**
+     * The rarity
+     * 0 = white
+     * 1 = green
+     * 2 = blue
+     * 3 = purple
+     */
+    r: number;
+    /**
+     * The item level / quality
+     */
+    qual: number
+    /**
+     * The modifiers on the item
+     */
+    mods: {
+      [key: string]: number;
+    };
+  }>;
 };
 
 type DefaultSkill = {
@@ -170,6 +210,7 @@ type DefaultSkill = {
 };
 
 type Entity = BaseEntity & {
+  md: string;
   /**
    * Is it a monster?
    */

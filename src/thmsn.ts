@@ -123,12 +123,12 @@ function storagePlacement() {
   };
   let noBoxes = false;
   // places rows before columns
-  for (let row = 3; row <= 3; row++) {
+  for (let row = 4; row <= 4; row++) {
     for (let col = 1; col <= 12; col++) {
       let indexBag = 0;
       while (
         indexBag < dw.c.bag.length &&
-        (!dw.c.bag[indexBag] || dw.c.bag[indexBag].md !== "box1")
+        (!dw.c.bag[indexBag] || dw.c.bag[indexBag].md !== "box2")
       ) {
         ++indexBag;
       }
@@ -154,28 +154,47 @@ function storagePlacement() {
 
 // box searcg
 // https://discord.com/channels/1061772817529585775/1061772817529585777/1117638862475370607
-// let indexBag = 0;
-// while (indexBag < dw.c.bag.length && dw.c.bag[indexBag]) {
-//     ++indexBag;
-// }
-// const GEMS = ['amethyst', 'ruby', 'sapphire', 'diamond', 'emerald'];
-// const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
-// const RINGS = GEMS.map((gem) => `t1${capitalize(gem)}Ring`);
-// const AMULETS = GEMS.map((gem) => `t1${capitalize(gem)}Amulet`);
-// for (let box of dw.entities.filter((e) => e.md === 'box' && Math.hypot(e.x - dw.c.x, e.y - dw.c.y) < 2.0)) {
-//     if (indexBag >= dw.c.bag.length) break;
-//     for (let indexStorage in box.storage) {
-//         const item = box.storage[indexStorage];
-//         if (!item) continue;
-//         if (![...RINGS, ...AMULETS].includes(item.md)) continue;
-//         console.log(`move ${item.md} from box (id=${box.id}, index=${indexStorage}), to inventory slot ${indexBag}`);
-//         dw.moveItem('storage', parseInt(indexStorage), 'bag', indexBag, box.id);
-//         ++indexBag;
-//         while (indexBag < dw.c.bag.length && dw.c.bag[indexBag]) {
-//             ++indexBag;
-//         }
-//         if (indexBag >= dw.c.bag.length) break;
-//     }
-// }
-
+function boxSearch() {
+  let indexBag = 0;
+  while (indexBag < dw.c.bag.length && dw.c.bag[indexBag]) {
+    ++indexBag;
+  }
+  const GEMS = ["amethyst", "ruby", "sapphire", "diamond", "emerald"];
+  const capitalize = (str:string) => str.charAt(0).toUpperCase() + str.slice(1);
+  const RINGS = GEMS.map((gem) => `t1${capitalize(gem)}Ring`);
+  const AMULETS = GEMS.map((gem) => `t1${capitalize(gem)}Amulet`);
+  for (let box of dw.entities.filter(
+    (e) => e.md === "box" && Math.hypot(e.x - dw.c.x, e.y - dw.c.y) < 2.0
+  )) {
+    if (indexBag >= dw.c.bag.length) break;
+    for (let indexStorage in box.storage) {
+      const item = box.storage[indexStorage];
+      if (!item) continue;
+      if (![...RINGS, ...AMULETS].includes(item.md)) continue;
+      console.log(
+        `move ${item.md} from box (id=${box.id}, index=${indexStorage}), to inventory slot ${indexBag}`
+      );
+      dw.moveItem("storage", parseInt(indexStorage), "bag", indexBag, box.id);
+      ++indexBag;
+      while (indexBag < dw.c.bag.length && dw.c.bag[indexBag]) {
+        ++indexBag;
+      }
+      if (indexBag >= dw.c.bag.length) break;
+    }
+  }
+}
 // ore: 1 for ore
+
+// loot a specific from storages
+
+// sacrifice specific items
+// let gcTable = dw.entities.find((e) => e && e.md === "gcTable");
+// dw.character.bag
+//   .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
+//   .filter((x) => x.item && x.item.qual <= 5 && x.item.r < 3 && !x.item.n)
+//   .forEach((x) => {
+//     if (gcTable) {
+//       console.log("sacItem", { id: ???, i: x.bIndex });
+//       dw.emit("sacItem", { id: ???, i: x.bIndex });
+//     }
+//   });

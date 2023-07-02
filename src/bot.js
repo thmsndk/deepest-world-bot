@@ -6,6 +6,8 @@ const farmGems = true;
 const farmMissions = true;
 const treeDistance = 10;
 
+// 10,-16 mision table crafting
+
 // go to spawn
 function goHome() {
   dw.move(dw.character.spawn.x, dw.character.spawn.y);
@@ -56,65 +58,49 @@ setInterval(async () => {
     (entity) => entity.md === "mailbox" && entity.storage.length > 0
   );
 
+  //
+
   //   dw.moveItem(bagFrom, indexFrom, bagTo, indexTo, idFrom, idTo)
   // Your character bag names are: 'bag', 'crafting', 'abilities', 'abilityBag'.
-
   // Other objects bag names are: 'storage'.
+  /*
+  if you transfer from mailbox (fromId) to yourself (toId = undefined, no id required since the server already knows your id) 
+  from mailbox (fromId) to a box (toId)
+  from your character (fromId = undefined, since no id req) to a box (toId) 
+  */
 
   // md === "missionBag"
   // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* me */)
 
   // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* mailId */)
 
-  // [
-  //   "moveItem",
-  //   [
-  //     {
-  //       "name": "bag",
-  //       "i": 13,
-  //       "item": {
-  //         "n": 1,
-  //         "md": "missionBag",
-  //         "items": [
-  //           {
-  //             "r": 0,
-  //             "md": "monsterMission",
-  //             "mods": {},
-  //             "qual": 3,
-  //             "blacklist": [],
-  //             "ownerDbId": 159
-  //           },
-  //           {
-  //             "r": 1,
-  //             "md": "gloves2",
-  //             "mods": {
-  //               "armorLocal": 1,
-  //               "armorIncLocal": 2
-  //             },
-  //             "qual": 3
-  //           }
-  //         ],
-  //         "mailId": 118
-  //       }
-  //     }
-  //   ]
-  // ]
-
-  //   [
-  //     "moveItem",
-  //     [
-  //         {
-  //             "id": 4155,
-  //             "name": "storage",
-  //             "i": 0,
-  //             "item": null
-  //         }
-  //     ]
-  // ]
+  // if we have
 
   const missionBoards = dw.entities.filter(
-    (entity) => entity.md === "missionBoard" && entity.storage.length > 0
+    (entity) =>
+      entity.ownerDbId === dw.character.dbId &&
+      entity.md === "missionBoard" &&
+      entity.storage.length > 0
   );
+
+  // dw.character.bag.findIndex(b => b && b.md === "missionBag")
+  // if we have a mission bag, we probably just completed a mission
+
+  const missionBagIndex = dw.character.bag.findIndex(
+    (b) => b && b.md === "missionBag"
+  );
+
+  if (missionBagIndex > -1 && !dw.character.combat) {
+    // TODO: What if we don't have enoug bagspace to open it?
+    dw.emit("openItem", { i: missionBagIndex });
+
+    dw.emit("sortInv");
+
+    // tp home for free
+    dw.emit("unstuck");
+
+    // TODO: add mission to missionBoard
+  }
 
   if (dw.character.mission && farmMissions) {
     // const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
@@ -409,14 +395,7 @@ setInterval(async () => {
     }
   }
 }, 500);
-// {
-//   "x": 62.97850713773158,
-//   "y": 86.62614437409958
-// }
-// {
-//   "x": 67.97850713773158,
-//   "y": 86.62614437409958
-// }
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function findPath(
   start,
@@ -760,7 +739,7 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
   return grid;
 }
 let lastDrunkDirection = null;
-function drunkenWalk(resolution = 0.5) {
+function drunkenWalk(resolution = 1) {
   // Define the character's initial position
   let { x, y } = dw.character;
   drawingGroups["drunkenWalk"] = [];
@@ -769,10 +748,15 @@ function drunkenWalk(resolution = 0.5) {
     // keep going in the same direction if it is a valid direction
     const nx = x + lastDrunkDirection.dx;
     const ny = y + lastDrunkDirection.dy;
+    // world coord to local coord
+    // Math.floor(x) & 15
+    // const goal = snapToGrid(nx, ny, resolution);
+    // const goal = { x: Math.floor(nx) & 15, y: Math.floor(ny) & 15 };
+    const goal = { x: nx, y: ny };
     const terrain = dw.getTerrainAt({
       l: dw.character.l,
-      x: nx,
-      y: ny,
+      x: goal.x,
+      y: goal.y,
     });
     const isWalkable = terrain === 0; /* Air / Walkable */
     // TODO: we can only move diagonally, if we can get there manhattan style
@@ -781,9 +765,9 @@ function drunkenWalk(resolution = 0.5) {
       // render open set
       {
         type: "rectangle",
-        point: { x: nx, y: ny },
-        width: resolution * 96,
-        height: resolution * 96,
+        point: { x: goal.x, y: goal.y },
+        width: 96,
+        height: 96,
         color: isWalkable ? "#00FF00" : "#FF0000",
       }
     );
@@ -820,8 +804,8 @@ function drunkenWalk(resolution = 0.5) {
     ...directions.map(({ x, y }) => ({
       type: "rectangle",
       point: { x, y },
-      width: resolution * 96,
-      height: resolution * 96,
+      width: 96,
+      height: 96,
       color: "#1F00FF",
     })),
   ];
@@ -829,20 +813,24 @@ function drunkenWalk(resolution = 0.5) {
   lastDrunkDirection =
     directions[Math.floor(Math.random() * directions.length)];
 
+  // Update the character's position
+  x += lastDrunkDirection.dx;
+  y += lastDrunkDirection.dy;
+
+  // const goal = snapToGrid(x, y, resolution);
+  const goal = { x: x, y: y };
+  // const goal = { x: Math.floor(x) & 15, y: Math.floor(y) & 15 };
   drawingGroups["drunkenWalk"].push(
     // render open set
     {
       type: "rectangle",
-      point: { x: lastDrunkDirection.x, y: lastDrunkDirection.y },
-      width: resolution * 96,
-      height: resolution * 96,
+      point: { x: goal.x, y: goal.y },
+      width: 96,
+      height: 96,
       color: "#00FF00",
     }
   );
 
-  // Update the character's position
-  x += lastDrunkDirection.dx;
-  y += lastDrunkDirection.dy;
   console.log("drunk move new direction", x, y, directions);
   dw.move(x, y);
 }
@@ -874,33 +862,6 @@ function getChunkKey(l, y, x) {
 function worldCoordToLocalCoord(x) {
   return Math.floor(x) & 15;
 }
-
-// function getTerrainUnder(entity) {
-//     const chunkKey = getChunkKey(entity.l-1, entity.y-1, entity.x);
-//     const localY = worldCoordToLocalCoord(entity.y-1);
-//     const localX = worldCoordToLocalCoord(entity.x);
-//     return dw.chunks[chunkKey][0][localY][localX];
-// }
-
-// function findPath(from, to) {
-//   const chunkKey = getChunkKey(dw.character.l, dw.character.y, dw.character.x);
-//   // get my terrain info, then get neighbour terrain info
-//   dw.getTerrainAt({ l: dw.character.l, x: dw.character.x, y: dw.character.y });
-//   // 1 seems to be unwalkable / a wall
-// }
-
-//   [
-//     "craft",
-//     {
-//       "id": 365,
-//       "md": "workbench",
-//       "max": 1
-//     }
-//   ]
-
-// ["placeItem", { i: 6, x: 57.06254644358234, y: 69.46362541032049 }];
-
-// ["skill", { md: "fastheal1", i: 2, id: 9814 }];
 
 function getTerrainInStraightLine(p1, p2) {
   const dx = p2.x - p1.x;
@@ -971,95 +932,6 @@ function snapToGrid(x, y, resolution = 0.5) {
   return { x: snappedX, y: snappedY };
 }
 
-/**
- *
- * gScores: This object stores the cost from the start tile to each tile on the grid. Initially, all scores are set to Infinity except for the start tile, which is set to 0. As the algorithm progresses, the actual cost from the start to each tile is updated.
- * fScores: This object stores the total estimated cost from the start tile to the end tile through each tile on the grid. It is the sum of the gScore (actual cost from the start) and the heuristic estimate from the current tile to the end tile. Initially, all scores are set to Infinity except for the start tile, which is set to the heuristic estimate.
- * In each iteration of the A* algorithm, the tile with the lowest fScore is chosen for evaluation. The fScore acts as a priority value, guiding the search towards tiles that are likely to lead to the least dangerous path.
- * The gScore is updated for each neighbor of the current tile based on the cumulative danger level from the start tile to the current tile. If a better (lower) gScore is found for a neighbor, it means that the current path to that neighbor is less dangerous, and the gScore and fScore are updated accordingly.
- * The fScore is updated by adding the gScore to the heuristic estimate for each neighbor. This gives an estimate of the total cost from the start to the end through the current neighbor.
- * @param {*} grid
- * @param {*} start
- * @param {*} end
- * @param {*} dangerThreshold
- * @returns
- */
-function findLeastDangerousPath(grid, p1, p2, dangerThreshold) {
-  const openSet = new Set(); // Tiles to be evaluated
-  const closedSet = new Set(); // Evaluated tiles
-  const gScores = {}; // Cost from start to each tile
-  const fScores = {}; // Total estimated cost from start to end through each tile
-  const previous = {}; // Stores the previous tile in the path
-
-  const start = grid.find((t) => t.x === p1.x && t.y === p1.y);
-  const end = grid.find((t) => t.x === p2.x && t.y === p2.y);
-  // console.log("findLeastDangerousPath", p1, start, p2, end, grid);
-
-  // Initialize scores
-  for (const tile of grid) {
-    gScores[tile] = Infinity;
-    fScores[tile] = Infinity;
-    previous[tile] = null;
-  }
-
-  gScores[start] = 0;
-  fScores[start] = heuristicCost(start, end); // Heuristic estimate for start
-
-  openSet.add(start);
-
-  while (openSet.size > 0) {
-    // Find the tile with the lowest fScore
-    let current = null;
-    let lowestFScore = Infinity;
-
-    for (const tile of openSet) {
-      if (fScores[tile] < lowestFScore) {
-        lowestFScore = fScores[tile];
-        current = tile;
-      }
-    }
-
-    // Exit the loop if destination reached or danger threshold exceeded
-    if (current === end || current.danger > dangerThreshold) {
-      break;
-    }
-
-    openSet.delete(current);
-    closedSet.add(current);
-
-    const neighbors = getNeighbors(current, grid);
-    for (const neighbor of neighbors) {
-      // Skip neighbors already evaluated or with danger level exceeding the threshold
-      if (closedSet.has(neighbor) || neighbor.danger > dangerThreshold) {
-        continue;
-      }
-
-      const tentativeGScore = gScores[current] + neighbor.danger;
-
-      if (!openSet.has(neighbor)) {
-        openSet.add(neighbor);
-      } else if (tentativeGScore >= gScores[neighbor]) {
-        continue;
-      }
-
-      // Update scores and previous tile
-      previous[neighbor] = current;
-      gScores[neighbor] = tentativeGScore;
-      fScores[neighbor] = gScores[neighbor] + heuristicCost(neighbor, end);
-    }
-  }
-
-  // Trace back the path
-  const path = [];
-  let current = end;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = previous[current];
-  }
-
-  return path;
-}
 
 // Helper function to calculate the heuristic cost
 function heuristicCost(tileA, tileB) {
@@ -1068,23 +940,3 @@ function heuristicCost(tileA, tileB) {
   const dy = Math.abs(tileA.y - tileB.y);
   return dx + dy;
 }
-
-// // Usage example
-// const p1 = { l: dw.character.l, x: dw.character.x, y: dw.character.y };
-// const p2 = { l: desiredLevel, x: desiredX, y: desiredY };
-// const path = findPath(p1, p2);
-
-// if (path) {
-//   console.log("Path found:", path);
-// } else {
-//   console.log("No path found.");
-// }
-
-// // tp home for free
-// ["unstuck", {}]
-// 0
-// :
-// "unstuck"
-// 1
-// :
-// {}
