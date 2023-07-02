@@ -1,9 +1,9 @@
 dw.debug = 1;
-const farmMobs = true;
+const farmMobs = false;
 const farmTrees = true;
-const farmOre = false;
+const farmOre = true;
 const farmGems = true;
-const farmMissions = true;
+const farmMissions = false;
 const treeDistance = 10;
 
 // 10,-16 mision table crafting
@@ -90,8 +90,22 @@ setInterval(async () => {
     (b) => b && b.md === "missionBag"
   );
 
+  if (!farmMissions && dw.character.bag.filter((b) => !b).length === 1) {
+    merge("wood");
+    merge("rock");
+    merge("ironOre");
+    merge("skillOrb");
+
+    dw.emit("sortInv");
+  }
+
   if (missionBagIndex > -1 && !dw.character.combat) {
     // TODO: What if we don't have enoug bagspace to open it?
+    merge("wood");
+    merge("rock");
+    merge("ironOre");
+    merge("skillOrb");
+
     dw.emit("openItem", { i: missionBagIndex });
 
     dw.emit("sortInv");
@@ -168,7 +182,7 @@ setInterval(async () => {
           // TODO add mission to board
         }
       }
-      
+
       // accept mission
       for (let index = 0; index < board.storage.length; index++) {
         const mission = board.storage[index];
@@ -777,13 +791,21 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
   // ];
   return grid;
 }
+let lastCharacterCoordinates = { x: dw.character.x, y: dw.character.y };
 let lastDrunkDirection = null;
 function drunkenWalk(resolution = 1) {
   // Define the character's initial position
   let { x, y } = dw.character;
   drawingGroups["drunkenWalk"] = [];
 
-  if (lastDrunkDirection) {
+  const hasMovedSinceLast =
+    lastCharacterCoordinates.x !== dw.character.x ||
+    lastCharacterCoordinates.y !== dw.character.y;
+  if (!hasMovedSinceLast) {
+    console.warn("STUCK? force new direction ", lastCharacterCoordinates);
+  }
+
+  if (lastDrunkDirection && hasMovedSinceLast) {
     // keep going in the same direction if it is a valid direction
     const nx = x + lastDrunkDirection.dx;
     const ny = y + lastDrunkDirection.dy;
@@ -813,6 +835,7 @@ function drunkenWalk(resolution = 1) {
 
     if (isWalkable) {
       console.log("drunk move same direction", nx, ny, terrain);
+      lastCharacterCoordinates = { x: dw.character.x, y: dw.character.y };
       dw.move(nx, ny);
       return;
     }
@@ -978,3 +1001,55 @@ function heuristicCost(tileA, tileB) {
   const dy = Math.abs(tileA.y - tileB.y);
   return dx + dy;
 }
+
+function merge(itemName) {
+  const itemsByRarity = {};
+
+  for (let index = 0; index < dw.character.bag.length; index++) {
+    const item = dw.character.bag[index];
+
+    if (!item) continue;
+    if (!item.n) continue;
+    if (!item.md === itemName) continue;
+
+    if (!itemsByRarity[item.md]) {
+      itemsByRarity[item.md] = {};
+    }
+
+    if (!itemsByRarity[item.md][item.r]) {
+      itemsByRarity[item.md][item.r] = [];
+    }
+
+    itemsByRarity[item.md][item.r].push({ bagIndex: index, item: item });
+  }
+
+  for (const itemName in itemsByRarity) {
+    const rarities = itemsByRarity[itemName];
+    for (const rarity in rarities) {
+      const items = rarities[rarity];
+      if (items.length > 1) {
+        const freeCraftingIndexes = dw.c.craftIn
+          .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
+          .filter((x) => !x.item)
+          .map((x) => x.bIndex);
+
+        // TODO more logic for detecting stacksize
+        for (const { bagIndex, item } of items) {
+          const craftingIndex = freeCraftingIndexes.pop();
+          if (craftingIndex) {
+            console.log(
+              `move ${item.md} r:${rarity} bag index=${bagIndex}, to crafting slot ${craftingIndex}`
+            );
+            dw.moveItem("bag", bagIndex, "craftIn", craftingIndex, null, null);
+          }
+        }
+
+        dw.emit("merge");
+        // TODO: sleep?
+      }
+    }
+  }
+}
+top.merge = merge;
+
+// TODO: deposit & withdraw items from boxes

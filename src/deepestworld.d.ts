@@ -102,7 +102,7 @@ declare global {
     abandonMission(): void;
 
     /**
-     * Your character bag names are: 'bag', 'crafting', 'abilities', 'abilityBag'.
+     * Your character bag names are: 'bag', 'craftIn', 'abilities', 'abilityBag'.
      * Other objects bag names are: 'storage'.
      * @param bagFrom
      * @param indexFrom
