@@ -167,19 +167,19 @@ setInterval(async () => {
           // TODO: move into range of board
           // TODO add mission to board
         }
-
-        // accept mission
-        for (let index = 0; index < board.storage.length; index++) {
-          const mission = board.storage[index];
-          if (mission) {
-            if (!boardInRange) {
-              dw.move(board.x, board.y);
-              return;
-            } else {
-              dw.acceptMission(board.id, index);
-            }
-            break;
+      }
+      
+      // accept mission
+      for (let index = 0; index < board.storage.length; index++) {
+        const mission = board.storage[index];
+        if (mission) {
+          if (!boardInRange) {
+            dw.move(board.x, board.y);
+            return;
+          } else {
+            dw.acceptMission(board.id, index);
           }
+          break;
         }
       }
     }
