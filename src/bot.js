@@ -299,8 +299,37 @@ setInterval(async () => {
       dw.emit("chop", { id: target.id });
     }
   } else {
-    const inAttackRange =
-      distancetoTarget <= dw.character.skills[0].range; /* Attack */
+    let skillToUse = undefined;
+    for (const skill of dw.character.skills) {
+      if (!skill) continue;
+      if (!skillToUse) {
+        skillToUse = skill;
+      }
+
+      if (skillToUse && skillToUse !== skill) {
+        const skillToUseDamage = Object.entries(dw.character.skills).reduce(
+          (result, [key, value]) => {
+            if (key.endsWith("Dmg")) {
+              result += value;
+            }
+            return result;
+          },
+          0
+        );
+
+        const skillDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
+          if (key.endsWith("Dmg")) {
+            result += value;
+          }
+          return result;
+        }, 0);
+
+        if (skillDamage > skillToUseDamage) {
+          skillToUse = skill;
+        }
+      }
+    }
+    const inAttackRange = distancetoTarget <= skillToUse.range; /* Attack */
     if (!inAttackRange) {
       dw.move(target.x, target.y);
     } else {
@@ -308,10 +337,10 @@ setInterval(async () => {
     }
 
     // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
-    if (dw.isSkillReady(1) && inAttackRange) {
+    if (dw.isSkillReady(skillToUse.md) && inAttackRange) {
       dw.setTarget(target);
       // console.log("attack");
-      dw.useSkill(1, target);
+      dw.useSkill(skillToUse.md, target);
     }
   }
 }, 500);
@@ -389,7 +418,6 @@ async function findPath(
   const gScores = {}; // Cost from start to each tile
   const fScores = {}; // Total estimated cost from start to end through each tile
   const previous = {}; // Stores the previous tile in the path
-  
 
   function getKey({ x, y }) {
     return `${x}${y}`;
