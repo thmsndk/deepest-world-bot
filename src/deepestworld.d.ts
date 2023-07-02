@@ -108,10 +108,10 @@ declare global {
      * @param indexFrom
      * @param bagTo
      * @param indexTo
-     * @param idFrom
+     * @param idFrom can be omitted if transfering from your character
      * @param idTo can be omitted if transfering to your character
      */
-    moveItem(bagFrom:string, indexFrom:number, bagTo:string, indexTo:number, idFrom:number, idTo?:number);
+    moveItem(bagFrom:string, indexFrom:number, bagTo:string, indexTo:number, idFrom?:number, idTo?:number);
   };
 }
 
