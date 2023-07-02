@@ -48,7 +48,7 @@ async function run() {
     sleep(100);
   }
 }
-
+// todo: use hit event instead
 dw.on("diff", (data) => {
   // TODO: unsure about diff structure
   if (data.some((x) => x.id === dw.character.id && x.died)) {

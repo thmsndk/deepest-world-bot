@@ -52,6 +52,66 @@ setInterval(async () => {
   // TODO: don't enter too high lvl missions
   // Handle death in missions and joining it again
 
+  const mailboxes = dw.entities.filter(
+    (entity) => entity.md === "mailbox" && entity.storage.length > 0
+  );
+
+  //   dw.moveItem(bagFrom, indexFrom, bagTo, indexTo, idFrom, idTo)
+  // Your character bag names are: 'bag', 'crafting', 'abilities', 'abilityBag'.
+
+  // Other objects bag names are: 'storage'.
+
+  // md === "missionBag"
+  // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* me */)
+
+  // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* mailId */)
+
+  // [
+  //   "moveItem",
+  //   [
+  //     {
+  //       "name": "bag",
+  //       "i": 13,
+  //       "item": {
+  //         "n": 1,
+  //         "md": "missionBag",
+  //         "items": [
+  //           {
+  //             "r": 0,
+  //             "md": "monsterMission",
+  //             "mods": {},
+  //             "qual": 3,
+  //             "blacklist": [],
+  //             "ownerDbId": 159
+  //           },
+  //           {
+  //             "r": 1,
+  //             "md": "gloves2",
+  //             "mods": {
+  //               "armorLocal": 1,
+  //               "armorIncLocal": 2
+  //             },
+  //             "qual": 3
+  //           }
+  //         ],
+  //         "mailId": 118
+  //       }
+  //     }
+  //   ]
+  // ]
+
+  //   [
+  //     "moveItem",
+  //     [
+  //         {
+  //             "id": 4155,
+  //             "name": "storage",
+  //             "i": 0,
+  //             "item": null
+  //         }
+  //     ]
+  // ]
+
   const missionBoards = dw.entities.filter(
     (entity) => entity.md === "missionBoard" && entity.storage.length > 0
   );
@@ -71,11 +131,13 @@ setInterval(async () => {
 
     if (/*!shouldAbandonMission &&*/ missionBoards.length > 0) {
       const board = missionBoards[0];
-      const inRange = dw.distance(dw.character, board) <= 1;
+      const inRange = dw.distance(dw.character, board) <= 2;
       if (!inRange) {
         dw.move(board.x, board.y);
+        return;
       } else {
         dw.enterMission();
+        return;
       }
     }
   } else {
@@ -317,12 +379,15 @@ setInterval(async () => {
           0
         );
 
-        const skillDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
-          if (key.endsWith("Dmg")) {
-            result += value;
-          }
-          return result;
-        }, 0);
+        const skillDamage = Object.entries(dw.character.skills).reduce(
+          (result, [key, value]) => {
+            if (key.endsWith("Dmg")) {
+              result += value;
+            }
+            return result;
+          },
+          0
+        );
 
         if (skillDamage > skillToUseDamage) {
           skillToUse = skill;
@@ -694,10 +759,41 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
   // ];
   return grid;
 }
-
-function drunkenWalk() {
+let lastDrunkDirection = null;
+function drunkenWalk(resolution = 0.5) {
   // Define the character's initial position
   let { x, y } = dw.character;
+  drawingGroups["drunkenWalk"] = [];
+
+  if (lastDrunkDirection) {
+    // keep going in the same direction if it is a valid direction
+    const nx = x + lastDrunkDirection.dx;
+    const ny = y + lastDrunkDirection.dy;
+    const terrain = dw.getTerrainAt({
+      l: dw.character.l,
+      x: nx,
+      y: ny,
+    });
+    const isWalkable = terrain === 0; /* Air / Walkable */
+    // TODO: we can only move diagonally, if we can get there manhattan style
+
+    drawingGroups["drunkenWalk"].push(
+      // render open set
+      {
+        type: "rectangle",
+        point: { x: nx, y: ny },
+        width: resolution * 96,
+        height: resolution * 96,
+        color: isWalkable ? "#00FF00" : "#FF0000",
+      }
+    );
+
+    if (isWalkable) {
+      console.log("drunk move same direction", nx, ny, terrain);
+      dw.move(nx, ny);
+      return;
+    }
+  }
 
   // Determine the next move randomly
   let directions = [
@@ -705,10 +801,10 @@ function drunkenWalk() {
     { dx: 1, dy: 0 }, // Right
     { dx: 0, dy: -1 }, // Up
     { dx: 0, dy: 1 }, // Down
-    { dx: -1, dy: -1 }, // Diagonal: Top-left
-    { dx: 1, dy: -1 }, // Diagonal: Top-right
-    { dx: -1, dy: 1 }, // Diagonal: Bottom-left
-    { dx: 1, dy: 1 }, // Diagonal: Bottom-right
+    // { dx: -1, dy: -1 }, // Diagonal: Top-left
+    // { dx: 1, dy: -1 }, // Diagonal: Top-right
+    // { dx: -1, dy: 1 }, // Diagonal: Bottom-left
+    // { dx: 1, dy: 1 }, // Diagonal: Bottom-right
   ];
 
   directions.filter(
@@ -720,13 +816,34 @@ function drunkenWalk() {
       }) === 0 /* Air / Walkable */
   );
 
-  const randomDirection =
+  drawingGroups["drunkenWalk"] = [
+    ...directions.map(({ x, y }) => ({
+      type: "rectangle",
+      point: { x, y },
+      width: resolution * 96,
+      height: resolution * 96,
+      color: "#1F00FF",
+    })),
+  ];
+
+  lastDrunkDirection =
     directions[Math.floor(Math.random() * directions.length)];
 
-  // Update the character's position
-  x += randomDirection.dx;
-  y += randomDirection.dy;
+  drawingGroups["drunkenWalk"].push(
+    // render open set
+    {
+      type: "rectangle",
+      point: { x: lastDrunkDirection.x, y: lastDrunkDirection.y },
+      width: resolution * 96,
+      height: resolution * 96,
+      color: "#00FF00",
+    }
+  );
 
+  // Update the character's position
+  x += lastDrunkDirection.dx;
+  y += lastDrunkDirection.dy;
+  console.log("drunk move new direction", x, y, directions);
   dw.move(x, y);
 }
 
@@ -962,3 +1079,12 @@ function heuristicCost(tileA, tileB) {
 // } else {
 //   console.log("No path found.");
 // }
+
+// // tp home for free
+// ["unstuck", {}]
+// 0
+// :
+// "unstuck"
+// 1
+// :
+// {}
