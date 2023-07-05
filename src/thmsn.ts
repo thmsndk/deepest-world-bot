@@ -116,19 +116,23 @@ function storagePlacement() {
   // i wonder if you can fix those 1px spaces with the real hitbox: 0.4375, 0.28125
 
   // https://discord.com/channels/1061772817529585775/1061772817529585777/1117636559085244537
+  //   left should be floor(spawn.x-2) 
+  // places top left
+  // dw.emit("placeItem",{i:0,x:Math.floor(dw.c.spawn.x -2),y:Math.floor(dw.c.spawn.y -2)})
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const spawnUpperLeftCorner = {
-    x: dw.character.spawn.x - 2.763,
-    y: dw.character.spawn.y - 2.55,
+    x: Math.floor(dw.c.spawn.x -2),
+    y: Math.floor(dw.c.spawn.y -2),
   };
   let noBoxes = false;
   // places rows before columns
-  for (let row = 4; row <= 4; row++) {
+  for (let row = 2; row <= 3; row++) {
+    console.log("row", row);
     for (let col = 1; col <= 12; col++) {
       let indexBag = 0;
       while (
         indexBag < dw.c.bag.length &&
-        (!dw.c.bag[indexBag] || dw.c.bag[indexBag].md !== "box2")
+        (!dw.c.bag[indexBag] || dw.c.bag[indexBag].md !== "box1")
       ) {
         ++indexBag;
       }
@@ -160,7 +164,8 @@ function boxSearch() {
     ++indexBag;
   }
   const GEMS = ["amethyst", "ruby", "sapphire", "diamond", "emerald"];
-  const capitalize = (str:string) => str.charAt(0).toUpperCase() + str.slice(1);
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
   const RINGS = GEMS.map((gem) => `t1${capitalize(gem)}Ring`);
   const AMULETS = GEMS.map((gem) => `t1${capitalize(gem)}Amulet`);
   for (let box of dw.entities.filter(
