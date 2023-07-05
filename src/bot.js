@@ -15,6 +15,16 @@ function goHome() {
 // Add to console
 top.goHome = goHome;
 
+// go to spawn
+function setSpawn() {
+  const spawns = dw.get("spawns") ?? [];
+  spawns.push(dw.character.spawn);
+  dw.emit("setSpawn");
+  dw.set("spawns", spawns);
+}
+// Add to console
+top.setSpawn = setSpawn;
+
 // old spawn {l:0,x:58,y:70}
 const GEMS = ["amethyst", "ruby", "sapphire", "diamond", "emerald"];
 function isGem(entity) {
@@ -91,20 +101,16 @@ setInterval(async () => {
   );
 
   if (!farmMissions && dw.character.bag.filter((b) => !b).length === 1) {
-    merge("wood");
-    merge("rock");
-    merge("ironOre");
-    merge("skillOrb");
+    merge("wood", "rock", "ironOre", "skillOrb");
 
     dw.emit("sortInv");
   }
 
+  // TODO: full inventory? tp back and deposit items
+
   if (missionBagIndex > -1 && !dw.character.combat) {
     // TODO: What if we don't have enoug bagspace to open it?
-    merge("wood");
-    merge("rock");
-    merge("ironOre");
-    merge("skillOrb");
+    merge("wood", "rock", "ironOre", "skillOrb");
 
     dw.emit("openItem", { i: missionBagIndex });
 
@@ -211,7 +217,7 @@ setInterval(async () => {
     {
       type: "circle",
       point: { x: dw.character.spawn.x, y: dw.character.spawn.y },
-      radius: 0.5,
+      radius: 0.25,
       color: "#00FF00",
     },
   ];
@@ -791,8 +797,11 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
   // ];
   return grid;
 }
+
+// TODO: a counter , random, with amount of walks before changing new direction, could also be time stamp of last new direction
 let lastCharacterCoordinates = { x: dw.character.x, y: dw.character.y };
 let lastDrunkDirection = null;
+let lastDrunkDirectionTimestamp = new Date();
 function drunkenWalk(resolution = 1) {
   // Define the character's initial position
   let { x, y } = dw.character;
@@ -805,7 +814,11 @@ function drunkenWalk(resolution = 1) {
     console.warn("STUCK? force new direction ", lastCharacterCoordinates);
   }
 
-  if (lastDrunkDirection && hasMovedSinceLast) {
+  const shouldPickNewDirection =
+    new Date().getTime() - lastDrunkDirectionTimestamp.getTime() >
+    10000; /* 10 seconds */
+
+  if (lastDrunkDirection && hasMovedSinceLast && !shouldPickNewDirection) {
     // keep going in the same direction if it is a valid direction
     const nx = x + lastDrunkDirection.dx;
     const ny = y + lastDrunkDirection.dy;
@@ -874,6 +887,7 @@ function drunkenWalk(resolution = 1) {
 
   lastDrunkDirection =
     directions[Math.floor(Math.random() * directions.length)];
+  lastDrunkDirectionTimestamp = new Date();
 
   // Update the character's position
   x += lastDrunkDirection.dx;
@@ -893,7 +907,14 @@ function drunkenWalk(resolution = 1) {
     }
   );
 
-  console.log("drunk move new direction", x, y, directions);
+  console.log(
+    "drunk move new direction",
+    hasMovedSinceLast,
+    shouldPickNewDirection,
+    x,
+    y,
+    directions
+  );
   dw.move(x, y);
 }
 
@@ -1002,7 +1023,7 @@ function heuristicCost(tileA, tileB) {
   return dx + dy;
 }
 
-function merge(itemName) {
+function merge(...itemNames) {
   const itemsByRarity = {};
 
   for (let index = 0; index < dw.character.bag.length; index++) {
@@ -1010,7 +1031,7 @@ function merge(itemName) {
 
     if (!item) continue;
     if (!item.n) continue;
-    if (!item.md === itemName) continue;
+    if (!itemNames.includes(item.md)) continue;
 
     if (!itemsByRarity[item.md]) {
       itemsByRarity[item.md] = {};
