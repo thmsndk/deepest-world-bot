@@ -21,6 +21,8 @@ declare global {
 
     entities: Entities;
 
+    chunks: Chunks;
+
     findClosestMonster(cb: (entity: Monster) => void);
 
     /**
@@ -59,6 +61,9 @@ declare global {
      * @param pos
      */
     getTerrainAt(pos: { l: number; x: number; y: number }): number;
+
+    getTerrainUnder: (pos: { l: number; x: number; y: number }) => number;
+    getTerrainOver: (pos: { l: number; x: number; y: number }) => number;
 
     /**
      * Set the UI to show this target
@@ -111,9 +116,44 @@ declare global {
      * @param idFrom can be omitted if transfering from your character
      * @param idTo can be omitted if transfering to your character
      */
-    moveItem(bagFrom:string, indexFrom:number, bagTo:string, indexTo:number, idFrom?:number, idTo?:number);
+    moveItem(
+      bagFrom: string,
+      indexFrom: number,
+      bagTo: string,
+      indexTo: number,
+      idFrom?: number,
+      idTo?: number
+    );
+
+    log: (message: any) => void;
+    sendItem: (receiver: number | string, itemIndex: number) => void;
+    moveItem: (
+      bagFrom: string,
+      indexFrom: number,
+      bagTo: string,
+      indexTo: number,
+      idFrom: number,
+      idTo: number
+    ) => void;
+    get: (key: string) => any;
+    set: (key: string, value: any) => void;
+
+    getZoneLevel(pos: { l: number; x: number; y: number }): () => number;
+    getZoneLevel(): () => number;
   };
 }
+
+type Chunk = {}[];
+
+/**
+ * Each property is a chunk of 1x16x16 voxels containing data about the terrain.
+ *
+ * - Keys are the chunks world positions in the format "layer.row.col". Example: "0.0.0", "5.1.0", "-1.3.-2".
+ * - Values are 3D arrays of integers.
+ *
+ * Example: dw.chunks['0.0.0'][0][10][15] would return the terrain in chunk "0.0.0" at row 10 and col 15.
+ */
+type Chunks = Record<string, Chunk>;
 
 type BaseEntity = {
   id: number;
@@ -129,6 +169,11 @@ type BaseEntity = {
    * Latest known position y position from the server
    */
   y: number;
+
+  /**
+   * Movement speed. World units per second. Mult by 96 to get pixels per second.
+   */
+  moveSpeed?: number;
 };
 
 type Character = BaseEntity & {
@@ -140,6 +185,11 @@ type Character = BaseEntity & {
   hp: number;
   /** Characters maximum health */
   hpMax: number;
+
+  /** Characters current mana */
+  mp: number;
+  /** Characters maximum mana */
+  mpMax: number;
 
   /**
    * Set if the player is in combat
@@ -187,7 +237,7 @@ type Character = BaseEntity & {
     /**
      * The item level / quality
      */
-    qual: number
+    qual: number;
     /**
      * The modifiers on the item
      */
@@ -227,6 +277,12 @@ type Entity = BaseEntity & {
    * Is the entity a station?
    */
   station?: boolean;
+
+  /**
+   * 1 is a normal monster.
+   * 2+ are bosses.
+   */
+  rarity: number;
 
   // mission id when we have accepted the mission as well as runners.
   storage: Array<{

@@ -1,9 +1,9 @@
 dw.debug = 1;
-const farmMobs = false;
-const farmTrees = true;
-const farmOre = true;
+const farmMobs = true;
+const farmTrees = false;
+const farmOre = false;
 const farmGems = true;
-const farmMissions = false;
+const farmMissions = true;
 const treeDistance = 10;
 
 // 10,-16 mision table crafting
@@ -24,6 +24,36 @@ function setSpawn() {
 }
 // Add to console
 top.setSpawn = setSpawn;
+
+function sacItems(maxLevel = 5, maxRarity = 2) {
+  const altar = dw.entities.find(
+    (entity) =>
+      entity &&
+      entity.md === "sacAltar1" &&
+      entity.ownerDbId === dw.character.dbId
+  );
+
+  if (!altar) {
+    console.warn("No altar nearby.");
+    return;
+  }
+
+  // TODO: move in range of altar?
+
+  dw.character.bag
+    .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
+    .filter(
+      (x) =>
+        x.item && x.item.qual <= maxLevel && x.item.r <= maxRarity && !x.item.n
+    )
+    .forEach((x) => {
+      if (altar) {
+        console.log("sacItem", { id: altar.id, i: x.bIndex });
+        dw.emit("sacItem", { id: altar.id, i: x.bIndex });
+      }
+    });
+}
+top.sacItems = sacItems;
 
 // old spawn {l:0,x:58,y:70}
 const GEMS = ["amethyst", "ruby", "sapphire", "diamond", "emerald"];
@@ -119,7 +149,7 @@ setInterval(async () => {
     // tp home for free
     dw.emit("unstuck");
 
-    // TODO: add mission to missionBoard
+    sacItems();
   }
 
   if (dw.character.mission) {
@@ -157,7 +187,7 @@ setInterval(async () => {
           (x) =>
             x.item &&
             x.item.md.endsWith("Mission") &&
-            x.item.qual <= 5 && // only auto add up to lvl 5 missions
+            x.item.qual < 8 && // only auto add up to lvl 7 missions
             x.item.r < 3 &&
             !x.item.n
         );
@@ -172,6 +202,7 @@ setInterval(async () => {
               return;
             } else {
               const missionToAdd = missionsInBag.pop();
+              if (!missionToAdd) break;
               dw.moveItem(
                 "bag",
                 missionToAdd.bagIndex,
@@ -206,17 +237,22 @@ setInterval(async () => {
   }
 
   // TODO z-index
+  const spawn = {
+    x: Math.floor(dw.character.spawn.x),
+    y: Math.floor(dw.character.spawn.y),
+  };
+
   drawingGroups["spawnArea"] = [
     {
       type: "rectangle",
-      point: { x: dw.character.spawn.x, y: dw.character.spawn.y },
+      point: spawn,
       width: 5 * 96,
       height: 5 * 96,
       color: "#00FF00",
     },
     {
       type: "circle",
-      point: { x: dw.character.spawn.x, y: dw.character.spawn.y },
+      point: spawn,
       radius: 0.25,
       color: "#00FF00",
     },
@@ -265,7 +301,7 @@ setInterval(async () => {
     }
 
     if (
-      healthPercentage < 0.15 &&
+      healthPercentage < 0.25 &&
       dw.isSkillReady(2) /* fastheal1 */ &&
       !dw.character.fx["fastheal1"]
     ) {

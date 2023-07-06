@@ -1,5 +1,5 @@
 /**
- * move spawn v1.0
+ * move spawn v1.1
  * paste theese functions into developer console, or incorporate them in your code.
  * Then do the following
  * - go to current spawn
@@ -11,68 +11,6 @@
  * - placeItemsAtNewSpawn(oldSpawnPoint, dw.c.spawn)
  * - then go back to pick up more of your old spawn, return to your new spawn and run placeItemsAtNewSpawn again.
  */
-
-// const oldSpawn = {
-//   l: 0,
-//   x: 58.76395570727661,
-//   y: 70.55810452118975,
-// };
-
-// new spawn
-// {
-//     "l": 0,
-//     "x": 34.791152779344785,
-//     "y": 130.06244399528052
-// }
-
-// offset calculation {dx: -23.972802927931824, dy: 59.50433947409077}
-
-// 1086740347 top left box hash
-// {
-//     "id": 90,
-//     "x": 56.00095570727661,
-//     "y": 68.00810452118975,
-//     "hash": "1086740347"
-//   }
-// {i:0,x:Math.floor(dw.c.spawn.x -2),y:Math.floor(dw.c.spawn.y -2)}
-// {i: 0, x: 32, y: 128}
-
-// x 56.00095570727661 -23.972802927931824
-// 32.028152779344786
-
-// y 68.00810452118975 + 59.50433947409077
-// 127.51244399528052
-
-// dw.emit("placeItem",{i:0,x:32.028152779344786,y:127.51244399528052})
-// 127 is wrong, that is above 128, we can place at 128 and higher values
-
-// new calculation = {id: 223, x: 32.791152779344785, y: 128.06244399528052, hash: '1086740347'
-// it's wrong though, the rows does not align
-
-// new calculation 2
-// const spawnOffset = calculateSpawnOffset(
-//   {
-//     l: 0,
-//     x: 58.76395570727661,
-//     y: 70.55810452118975,
-//   },
-//   { x: 56.00095570727661, y: 68.00810452118975 }
-// );
-// {dx: -1.99904429272339, dy: -1.9918954788102496}
-
-// {
-//   nx: Math.floor(c.spawn.x) + spawnOffset.dx,
-//   ny: Math.floor(c.spawn.y) + spawnOffset.dy,
-// }
-// {nx: 32.00095570727661, ny: 128.00810452118975}
-
-/*
-placeItemsAtNewSpawn({
-    l: 0,
-    x: 58.76395570727661,
-    y: 70.55810452118975,
-  },dw.c.spawn)
-*/
 
 function generateHash(entity) {
   const hashedObject = JSON.stringify({

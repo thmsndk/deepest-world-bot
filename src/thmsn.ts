@@ -193,13 +193,14 @@ function boxSearch() {
 // loot a specific from storages
 
 // sacrifice specific items
-// let gcTable = dw.entities.find((e) => e && e.md === "gcTable");
-// dw.character.bag
-//   .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
-//   .filter((x) => x.item && x.item.qual <= 5 && x.item.r < 3 && !x.item.n)
-//   .forEach((x) => {
-//     if (gcTable) {
-//       console.log("sacItem", { id: ???, i: x.bIndex });
-//       dw.emit("sacItem", { id: ???, i: x.bIndex });
-//     }
-//   });
+let altar = dw.entities.find((e) => e && e.md === "sacAltar1");
+dw.character.bag
+  .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
+  .filter((x) => x.item && x.item.qual <= 5 && x.item.r < 3 && !x.item.n)
+  .forEach((x) => {
+    if (altar) {
+      console.log("sacItem", { id: altar.id, i: x.bIndex });
+      dw.emit("sacItem", { id: altar.id, i: x.bIndex });
+    }
+  });
+  // TODO: empty out essence, merge and such
