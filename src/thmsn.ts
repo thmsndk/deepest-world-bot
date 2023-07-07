@@ -125,14 +125,14 @@ function storagePlacement() {
     y: Math.floor(dw.c.spawn.y -2),
   };
   let noBoxes = false;
-  // places rows before columns
-  for (let row = 2; row <= 3; row++) {
+  // places rows before columns, max 18 rows
+  for (let row = 18; row <= 18; row++) {
     console.log("row", row);
     for (let col = 1; col <= 12; col++) {
       let indexBag = 0;
       while (
         indexBag < dw.c.bag.length &&
-        (!dw.c.bag[indexBag] || dw.c.bag[indexBag].md !== "box1")
+        (!dw.c.bag[indexBag] || dw.c.bag[indexBag].md !== "box2")
       ) {
         ++indexBag;
       }

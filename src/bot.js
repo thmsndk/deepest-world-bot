@@ -25,12 +25,9 @@ function setSpawn() {
 // Add to console
 top.setSpawn = setSpawn;
 
-function sacItems(maxLevel = 5, maxRarity = 2) {
+async function sacItems(maxLevel = 5, maxRarity = 2) {
   const altar = dw.entities.find(
-    (entity) =>
-      entity &&
-      entity.md === "sacAltar1" &&
-      entity.ownerDbId === dw.character.dbId
+    (entity) => entity && entity.md === "sacAltar1" && entity.ownerDbId === dw.character.dbId
   );
 
   if (!altar) {
@@ -43,11 +40,18 @@ function sacItems(maxLevel = 5, maxRarity = 2) {
   dw.character.bag
     .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
     .filter(
-      (x) =>
-        x.item && x.item.qual <= maxLevel && x.item.r <= maxRarity && !x.item.n
+      (x) => x.item && x.item.qual <= maxLevel && x.item.r <= maxRarity && !x.item.n && x.item.md !== "monsterMission"
     )
-    .forEach((x) => {
+    .forEach(async (x) => {
       if (altar) {
+        const inSacRange = dw.distance(dw.c, altar) < 2;
+
+        if (!inSacRange) {
+          console.log("out of range for sac, moving to ", altar);
+          dw.move(altar.x, altar.y - 0.5);
+          await sleep(5000);
+        }
+
         console.log("sacItem", { id: altar.id, i: x.bIndex });
         dw.emit("sacItem", { id: altar.id, i: x.bIndex });
       }
@@ -94,9 +98,7 @@ setInterval(async () => {
   // TODO: don't enter too high lvl missions
   // Handle death in missions and joining it again
 
-  const mailboxes = dw.entities.filter(
-    (entity) => entity.md === "mailbox" && entity.storage.length > 0
-  );
+  const mailboxes = dw.entities.filter((entity) => entity.md === "mailbox" && entity.storage.length > 0);
 
   //
 
@@ -117,18 +119,13 @@ setInterval(async () => {
   // if we have
 
   const missionBoards = dw.entities.filter(
-    (entity) =>
-      entity.ownerDbId === dw.character.dbId &&
-      entity.md === "missionBoard" &&
-      entity.storage.length > 0
+    (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionBoard" && entity.storage.length > 0
   );
 
   // dw.character.bag.findIndex(b => b && b.md === "missionBag")
   // if we have a mission bag, we probably just completed a mission
 
-  const missionBagIndex = dw.character.bag.findIndex(
-    (b) => b && b.md === "missionBag"
-  );
+  const missionBagIndex = dw.character.bag.findIndex((b) => b && b.md === "missionBag");
 
   if (!farmMissions && dw.character.bag.filter((b) => !b).length === 1) {
     merge("wood", "rock", "ironOre", "skillOrb");
@@ -149,7 +146,11 @@ setInterval(async () => {
     // tp home for free
     dw.emit("unstuck");
 
-    sacItems();
+    await sleep(5000);
+
+    await sacItems();
+
+    await sleep(5000);
   }
 
   if (dw.character.mission) {
@@ -203,14 +204,7 @@ setInterval(async () => {
             } else {
               const missionToAdd = missionsInBag.pop();
               if (!missionToAdd) break;
-              dw.moveItem(
-                "bag",
-                missionToAdd.bagIndex,
-                "storage",
-                index,
-                null,
-                board.id
-              );
+              dw.moveItem("bag", missionToAdd.bagIndex, "storage", index, null, board.id);
             }
           }
           // TODO: do we have a mission below lvl 6 in our bag?
@@ -260,9 +254,7 @@ setInterval(async () => {
 
   const grid = generateGrid();
 
-  const targetingMe = dw.findClosestMonster(
-    (entity) => entity.targetId === dw.character.id
-  );
+  const targetingMe = dw.findClosestMonster((entity) => entity.targetId === dw.character.id);
 
   const healthPercentage = dw.character.hp / dw.character.hpMax;
   const isLowHealth = healthPercentage < 0.25;
@@ -271,46 +263,23 @@ setInterval(async () => {
     // dw.c.fx contains debuff/effect
 
     if (dw.isSkillReady(4) /* slowheal1 */ && !dw.character.fx["slowheal1"]) {
-      console.log(
-        "low health, slowheal1",
-        healthPercentage,
-        dw.character.hp,
-        dw.character.hpMax
-      );
+      console.log("low health, slowheal1", healthPercentage, dw.character.hp, dw.character.hpMax);
       dw.useSkill(4, dw.character);
       //   dw.useSkill(3, { id: dw.character.id });
       //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
       return;
     }
-
-    if (
-      healthPercentage < 0.5 &&
-      dw.isSkillReady(3) /* heal */ &&
-      !dw.character.fx["heal"]
-    ) {
-      console.log(
-        "low health, heal",
-        healthPercentage,
-        dw.character.hp,
-        dw.character.hpMax
-      );
+    
+    if (healthPercentage < 0.5 && dw.isSkillReady(3) /* heal */ && !dw.character.fx["heal"]) {
+      console.log("low health, heal", healthPercentage, dw.character.hp, dw.character.hpMax);
       dw.useSkill(3, dw.character);
       //   dw.useSkill(3, { id: dw.character.id });
       //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
       return;
     }
 
-    if (
-      healthPercentage < 0.25 &&
-      dw.isSkillReady(2) /* fastheal1 */ &&
-      !dw.character.fx["fastheal1"]
-    ) {
-      console.log(
-        "low health, fastheal1",
-        healthPercentage,
-        dw.character.hp,
-        dw.character.hpMax
-      );
+    if (healthPercentage < 0.25 && dw.isSkillReady(2) /* fastheal1 */ && !dw.character.fx["fastheal1"]) {
+      console.log("low health, fastheal1", healthPercentage, dw.character.hp, dw.character.hpMax);
       dw.useSkill(2, dw.character);
       // dw.useSkill(2, { i:2, id: dw.character.id });
       //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
@@ -336,11 +305,7 @@ setInterval(async () => {
       entity,
       distance: dw.distance(dw.character, entity),
     }))
-    .filter(
-      (x) =>
-        x.entity &&
-        ((x.entity.tree && x.distance <= treeDistance) || !x.entity.tree)
-    )
+    .filter((x) => x.entity && ((x.entity.tree && x.distance <= treeDistance) || !x.entity.tree))
     .sort((a, b) => a.distance - b.distance);
 
   const target = targetingMe ?? closestEntity[0]?.entity;
@@ -418,8 +383,7 @@ setInterval(async () => {
   // });
 
   if (target.ore) {
-    const inRange =
-      distancetoTarget <= dw.c.defaultSkills.mining.range; /* Attack */
+    const inRange = distancetoTarget <= dw.c.defaultSkills.mining.range; /* Attack */
     if (!inRange) {
       dw.move(target.x, target.y);
     }
@@ -430,8 +394,7 @@ setInterval(async () => {
       dw.emit("mine", { id: target.id });
     }
   } else if (target.tree) {
-    const inRange =
-      distancetoTarget <= dw.c.defaultSkills.woodcutting.range; /* Attack */
+    const inRange = distancetoTarget <= dw.c.defaultSkills.woodcutting.range; /* Attack */
     if (!inRange) {
       dw.move(target.x, target.y);
     }
@@ -450,25 +413,19 @@ setInterval(async () => {
       }
 
       if (skillToUse && skillToUse !== skill) {
-        const skillToUseDamage = Object.entries(dw.character.skills).reduce(
-          (result, [key, value]) => {
-            if (key.endsWith("Dmg")) {
-              result += value;
-            }
-            return result;
-          },
-          0
-        );
+        const skillToUseDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
+          if (key.endsWith("Dmg")) {
+            result += value;
+          }
+          return result;
+        }, 0);
 
-        const skillDamage = Object.entries(dw.character.skills).reduce(
-          (result, [key, value]) => {
-            if (key.endsWith("Dmg")) {
-              result += value;
-            }
-            return result;
-          },
-          0
-        );
+        const skillDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
+          if (key.endsWith("Dmg")) {
+            result += value;
+          }
+          return result;
+        }, 0);
 
         if (skillDamage > skillToUseDamage) {
           skillToUse = skill;
@@ -492,13 +449,7 @@ setInterval(async () => {
 }, 500);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function findPath(
-  start,
-  goal,
-  resolution = 0.5,
-  maxOperations = 800,
-  visualize = false
-) {
+async function findPath(start, goal, resolution = 0.5, maxOperations = 800, visualize = false) {
   // console.log("findPath", start, goal);
   start = snapToGrid(start.x, start.y, resolution);
   goal = snapToGrid(goal.x, goal.y, resolution);
@@ -533,10 +484,7 @@ async function findPath(
         const neighbourTile = snapToGrid(nx, ny, resolution);
         // TODO: collision detection? e.g. boxes and what not.
         // console.log("getNeighbours", { x, y }, neighbourTile);
-        const terrain =
-          nx && ny
-            ? dw.getTerrainAt({ l: dw.character.l, x: nx, y: ny })
-            : null;
+        const terrain = nx && ny ? dw.getTerrainAt({ l: dw.character.l, x: nx, y: ny }) : null;
         const isWalkable = terrain === 0; /* Air / Walkable */
 
         if (isWalkable) {
@@ -664,9 +612,7 @@ async function findPath(
         const neighbourKey = getKey(neighbour);
 
         // Skip neighbors already evaluated or with danger level exceeding the threshold
-        if (
-          closedSet.has(neighbourKey) /*|| neighbor.danger > dangerThreshold*/
-        ) {
+        if (closedSet.has(neighbourKey) /*|| neighbor.danger > dangerThreshold*/) {
           continue;
         }
 
@@ -695,8 +641,7 @@ async function findPath(
         // Update scores and previous tile
         previous[neighbourKey] = current;
         gScores[neighbourKey] = tentativeGScore;
-        fScores[neighbourKey] =
-          gScores[neighbourKey] + heuristicCost(neighbour, goal);
+        fScores[neighbourKey] = gScores[neighbourKey] + heuristicCost(neighbour, goal);
       }
     }
   } catch (error) {
@@ -707,12 +652,7 @@ async function findPath(
   // Trace back the path
   const path = [];
   if (operations >= maxOperations) {
-    console.warn(
-      "too many operations, partial path found",
-      operations,
-      maxOperations,
-      path
-    );
+    console.warn("too many operations, partial path found", operations, maxOperations, path);
   } else {
     current = goal;
   }
@@ -750,11 +690,7 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
   const grid = [];
   for (let i = 0; i < gridSize; i += resolution) {
     for (let j = 0; j < gridSize; j += resolution) {
-      const { x, y } = snapToGrid(
-        dw.character.x - centerX + i,
-        dw.character.y - centerY + j,
-        resolution
-      );
+      const { x, y } = snapToGrid(dw.character.x - centerX + i, dw.character.y - centerY + j, resolution);
 
       const terrain = dw.getTerrainAt({
         l: dw.character.l,
@@ -796,9 +732,7 @@ function generateGrid(gridSize = 30, resolution = 0.5) {
     // TODO: adjust danger level with more than 1
     if (entity.l !== dw.character.l) return;
     grid.forEach((tile) => {
-      const distance = Math.sqrt(
-        Math.pow(tile.x - entity.x, 2) + Math.pow(tile.y - entity.y, 2)
-      );
+      const distance = Math.sqrt(Math.pow(tile.x - entity.x, 2) + Math.pow(tile.y - entity.y, 2));
       if (distance <= dangerRadius) {
         tile.danger += dangerIncrement; // Increase the danger score within the radius
       }
@@ -844,15 +778,12 @@ function drunkenWalk(resolution = 1) {
   drawingGroups["drunkenWalk"] = [];
 
   const hasMovedSinceLast =
-    lastCharacterCoordinates.x !== dw.character.x ||
-    lastCharacterCoordinates.y !== dw.character.y;
+    lastCharacterCoordinates.x !== dw.character.x || lastCharacterCoordinates.y !== dw.character.y;
   if (!hasMovedSinceLast) {
     console.warn("STUCK? force new direction ", lastCharacterCoordinates);
   }
 
-  const shouldPickNewDirection =
-    new Date().getTime() - lastDrunkDirectionTimestamp.getTime() >
-    10000; /* 10 seconds */
+  const shouldPickNewDirection = new Date().getTime() - lastDrunkDirectionTimestamp.getTime() > 10000; /* 10 seconds */
 
   if (lastDrunkDirection && hasMovedSinceLast && !shouldPickNewDirection) {
     // keep going in the same direction if it is a valid direction
@@ -921,8 +852,7 @@ function drunkenWalk(resolution = 1) {
     })),
   ];
 
-  lastDrunkDirection =
-    directions[Math.floor(Math.random() * directions.length)];
+  lastDrunkDirection = directions[Math.floor(Math.random() * directions.length)];
   lastDrunkDirectionTimestamp = new Date();
 
   // Update the character's position
@@ -943,14 +873,7 @@ function drunkenWalk(resolution = 1) {
     }
   );
 
-  console.log(
-    "drunk move new direction",
-    hasMovedSinceLast,
-    shouldPickNewDirection,
-    x,
-    y,
-    directions
-  );
+  console.log("drunk move new direction", hasMovedSinceLast, shouldPickNewDirection, x, y, directions);
   dw.move(x, y);
 }
 
@@ -1094,9 +1017,7 @@ function merge(...itemNames) {
         for (const { bagIndex, item } of items) {
           const craftingIndex = freeCraftingIndexes.pop();
           if (craftingIndex) {
-            console.log(
-              `move ${item.md} r:${rarity} bag index=${bagIndex}, to crafting slot ${craftingIndex}`
-            );
+            console.log(`move ${item.md} r:${rarity} bag index=${bagIndex}, to crafting slot ${craftingIndex}`);
             dw.moveItem("bag", bagIndex, "craftIn", craftingIndex, null, null);
           }
         }
