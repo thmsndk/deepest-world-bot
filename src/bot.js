@@ -83,277 +83,308 @@ function getGemColor(entity) {
   }
 }
 
-setInterval(async () => {
-  drawingGroups["gems"] = [
-    ...dw.entities
-      .filter((e) => GEMS.some((g) => e.md.indexOf(g) > -1))
-      .map((e) => ({
-        type: "circle",
-        point: { x: e.x, y: e.y },
-        radius: 0.25,
-        color: getGemColor(e),
-        strokeWidth: 5,
-      })),
-  ];
-  // TODO: don't enter too high lvl missions
-  // Handle death in missions and joining it again
+async function run() {
+  console.log('starting run function')
+  while (true) {
+    console.log('TICK')
+    drawingGroups["gems"] = [
+      ...dw.entities
+        .filter((e) => GEMS.some((g) => e.md.indexOf(g) > -1))
+        .map((e) => ({
+          type: "circle",
+          point: { x: e.x, y: e.y },
+          radius: 0.25,
+          color: getGemColor(e),
+          strokeWidth: 5,
+        })),
+    ];
+    // TODO: don't enter too high lvl missions
+    // Handle death in missions and joining it again
 
-  const mailboxes = dw.entities.filter((entity) => entity.md === "mailbox" && entity.storage.length > 0);
+    const mailboxes = dw.entities.filter((entity) => entity.md === "mailbox" && entity.storage.length > 0);
 
-  //
+    //
 
-  //   dw.moveItem(bagFrom, indexFrom, bagTo, indexTo, idFrom, idTo)
-  // Your character bag names are: 'bag', 'crafting', 'abilities', 'abilityBag'.
-  // Other objects bag names are: 'storage'.
-  /*
-  if you transfer from mailbox (fromId) to yourself (toId = undefined, no id required since the server already knows your id) 
-  from mailbox (fromId) to a box (toId)
-  from your character (fromId = undefined, since no id req) to a box (toId) 
-  */
+    //   dw.moveItem(bagFrom, indexFrom, bagTo, indexTo, idFrom, idTo)
+    // Your character bag names are: 'bag', 'crafting', 'abilities', 'abilityBag'.
+    // Other objects bag names are: 'storage'.
+    /*
+    if you transfer from mailbox (fromId) to yourself (toId = undefined, no id required since the server already knows your id) 
+    from mailbox (fromId) to a box (toId)
+    from your character (fromId = undefined, since no id req) to a box (toId) 
+    */
 
-  // md === "missionBag"
-  // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* me */)
+    // md === "missionBag"
+    // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* me */)
 
-  // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* mailId */)
+    // dw.moveItem("storage", 0, "bag", 13, 4155 /* mail */, 17637 /* mailId */)
 
-  // if we have
+    // if we have
 
-  const missionBoards = dw.entities.filter(
-    (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionBoard" && entity.storage.length > 0
-  );
+    const missionBoards = dw.entities.filter(
+      (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionBoard" && entity.storage.length > 0
+    );
 
-  // dw.character.bag.findIndex(b => b && b.md === "missionBag")
-  // if we have a mission bag, we probably just completed a mission
+    // dw.character.bag.findIndex(b => b && b.md === "missionBag")
+    // if we have a mission bag, we probably just completed a mission
 
-  const missionBagIndex = dw.character.bag.findIndex((b) => b && b.md === "missionBag");
+    const missionBagIndex = dw.character.bag.findIndex((b) => b && b.md === "missionBag");
 
-  if (!farmMissions && dw.character.bag.filter((b) => !b).length === 1) {
-    merge("wood", "rock", "ironOre", "skillOrb");
+    if (!farmMissions && dw.character.bag.filter((b) => !b).length === 1) {
+      merge("wood", "rock", "ironOre", "skillOrb");
 
-    dw.emit("sortInv");
-  }
-
-  // TODO: full inventory? tp back and deposit items
-
-  if (missionBagIndex > -1 && !dw.character.combat) {
-    // TODO: What if we don't have enoug bagspace to open it?
-    merge("wood", "rock", "ironOre", "skillOrb");
-
-    dw.emit("openItem", { i: missionBagIndex });
-
-    dw.emit("sortInv");
-
-    // tp home for free
-    dw.emit("unstuck");
-
-    await sleep(5000);
-
-    await sacItems();
-
-    await sleep(5000);
-  }
-
-  if (dw.character.mission) {
-    // const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
-    // const shouldAbandonMission =
-    //   dw.character.mission &&
-    //   dw.character.mission.progress < 100 &&
-    //   timeLeft <= 5 * 60000;
-    // // TODO: teleport when timer is getting too low
-
-    // if (shouldAbandonMission && missionBoards.length > 0) {
-    //   // TODO should probably find the correct mission board to abandon
-    //   dw.abandonMission();
-    // }
-
-    if (/*!shouldAbandonMission &&*/ missionBoards.length > 0) {
-      const board = missionBoards[0];
-      const inRange = dw.distance(dw.character, board) <= 2;
-      if (!inRange) {
-        dw.move(board.x, board.y);
-        return;
-      } else {
-        dw.enterMission();
-        return;
-      }
+      dw.emit("sortInv");
     }
-  } else {
-    if (missionBoards.length > 0 && farmMissions) {
-      const board = missionBoards[0];
-      const boardInRange = dw.distance(dw.character, board) <= 2;
 
-      const missionsInBag = dw.character.bag
-        .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
-        .filter(
-          (x) =>
-            x.item &&
-            x.item.md.endsWith("Mission") &&
-            x.item.qual < 8 && // only auto add up to lvl 7 missions
-            x.item.r < 3 &&
-            !x.item.n
-        );
+    // TODO: full inventory? tp back and deposit items
 
-      // populate missionboard
-      if (missionsInBag.length > 0) {
+    if (missionBagIndex > -1 && !dw.character.combat) {
+      // TODO: What if we don't have enoug bagspace to open it?
+      merge("wood", "rock", "ironOre", "skillOrb");
+
+      dw.emit("openItem", { i: missionBagIndex });
+
+      dw.emit("sortInv");
+
+      // tp home for free
+      dw.emit("unstuck");
+
+      await sleep(5000);
+
+      await sacItems();
+
+      await sleep(5000);
+    }
+
+    if (dw.character.mission) {
+      // const timeLeft = dw.character.mission.timeoutAt - new Date().getTime();
+      // const shouldAbandonMission =
+      //   dw.character.mission &&
+      //   dw.character.mission.progress < 100 &&
+      //   timeLeft <= 5 * 60000;
+      // // TODO: teleport when timer is getting too low
+
+      // if (shouldAbandonMission && missionBoards.length > 0) {
+      //   // TODO should probably find the correct mission board to abandon
+      //   dw.abandonMission();
+      // }
+
+      if (/*!shouldAbandonMission &&*/ missionBoards.length > 0) {
+        const board = missionBoards[0];
+        const inRange = dw.distance(dw.character, board) <= 2;
+        if (!inRange) {
+          dw.move(board.x, board.y);
+          await sleep(250);
+          continue;
+        } else {
+          dw.enterMission();
+          await sleep(250);
+          continue;
+        }
+      }
+    } else {
+      if (missionBoards.length > 0 && farmMissions) {
+        const board = missionBoards[0];
+        const boardInRange = dw.distance(dw.character, board) <= 2;
+
+        const missionsInBag = dw.character.bag
+          .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
+          .filter(
+            (x) =>
+              x.item &&
+              x.item.md.endsWith("Mission") &&
+              x.item.qual < 8 && // only auto add up to lvl 7 missions
+              x.item.r < 3 &&
+              !x.item.n
+          );
+
+        // populate missionboard
+        if (missionsInBag.length > 0) {
+          for (let index = 0; index < board.storage.length; index++) {
+            const mission = board.storage[index];
+            if (!mission) {
+              if (!boardInRange) {
+                dw.move(board.x, board.y);
+                continue;
+              } else {
+                const missionToAdd = missionsInBag.pop();
+                if (!missionToAdd) break;
+                dw.moveItem("bag", missionToAdd.bagIndex, "storage", index, null, board.id);
+              }
+            }
+            // TODO: do we have a mission below lvl 6 in our bag?
+
+            // TODO: move into range of board
+            // TODO add mission to board
+          }
+        }
+
+        // accept mission
         for (let index = 0; index < board.storage.length; index++) {
           const mission = board.storage[index];
-          if (!mission) {
+          if (mission) {
             if (!boardInRange) {
               dw.move(board.x, board.y);
-              return;
+              continue;
             } else {
-              const missionToAdd = missionsInBag.pop();
-              if (!missionToAdd) break;
-              dw.moveItem("bag", missionToAdd.bagIndex, "storage", index, null, board.id);
+              dw.acceptMission(board.id, index);
             }
+            break;
           }
-          // TODO: do we have a mission below lvl 6 in our bag?
-
-          // TODO: move into range of board
-          // TODO add mission to board
-        }
-      }
-
-      // accept mission
-      for (let index = 0; index < board.storage.length; index++) {
-        const mission = board.storage[index];
-        if (mission) {
-          if (!boardInRange) {
-            dw.move(board.x, board.y);
-            return;
-          } else {
-            dw.acceptMission(board.id, index);
-          }
-          break;
         }
       }
     }
-  }
 
-  // TODO z-index
-  const spawn = {
-    x: Math.floor(dw.character.spawn.x),
-    y: Math.floor(dw.character.spawn.y),
-  };
+    // TODO z-index
+    const spawn = {
+      x: Math.floor(dw.character.spawn.x),
+      y: Math.floor(dw.character.spawn.y),
+    };
 
-  drawingGroups["spawnArea"] = [
-    {
-      type: "rectangle",
-      point: spawn,
-      width: 5 * 96,
-      height: 5 * 96,
-      color: "#00FF00",
-    },
-    {
-      type: "circle",
-      point: spawn,
-      radius: 0.25,
-      color: "#00FF00",
-    },
-  ];
+    drawingGroups["spawnArea"] = [
+      {
+        type: "rectangle",
+        point: spawn,
+        width: 5 * 96,
+        height: 5 * 96,
+        color: "#00FF00",
+      },
+      {
+        type: "circle",
+        point: spawn,
+        radius: 0.25,
+        color: "#00FF00",
+      },
+    ];
 
-  const grid = generateGrid();
+    const grid = generateGrid();
 
-  const targetingMe = dw.findClosestMonster((entity) => entity.targetId === dw.character.id);
+    const targetingMe = dw.findClosestMonster((entity) => entity.targetId === dw.character.id);
 
-  const healthPercentage = dw.character.hp / dw.character.hpMax;
-  const isLowHealth = healthPercentage < 0.25;
+    const healthPercentage = dw.character.hp / dw.character.hpMax;
+    const isLowHealth = healthPercentage < 0.25;
 
-  if (healthPercentage < 0.75 /*&& !dw.character.gcd*/) {
-    // dw.c.fx contains debuff/effect
+    if (healthPercentage < 0.75 /*&& !dw.character.gcd*/) {
+      // dw.c.fx contains debuff/effect
 
-    if (dw.isSkillReady(4) /* slowheal1 */ && !dw.character.fx["slowheal1"]) {
-      console.log("low health, slowheal1", healthPercentage, dw.character.hp, dw.character.hpMax);
-      dw.useSkill(4, dw.character);
-      //   dw.useSkill(3, { id: dw.character.id });
-      //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
-      return;
+      if (dw.isSkillReady(4) /* slowheal1 */ && !dw.character.fx["slowheal1"]) {
+        console.log("low health, slowheal1", healthPercentage, dw.character.hp, dw.character.hpMax);
+        dw.useSkill(4, dw.character);
+        //   dw.useSkill(3, { id: dw.character.id });
+        //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
+        await sleep(250);
+        continue;
+      }
+
+      if (healthPercentage < 0.5 && dw.isSkillReady(3) /* heal */ && !dw.character.fx["heal"]) {
+        console.log("low health, heal", healthPercentage, dw.character.hp, dw.character.hpMax);
+        dw.useSkill(3, dw.character);
+        //   dw.useSkill(3, { id: dw.character.id });
+        //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
+        await sleep(250);
+        continue;
+      }
+
+      if (healthPercentage < 0.25 && dw.isSkillReady(2) /* fastheal1 */ && !dw.character.fx["fastheal1"]) {
+        console.log("low health, fastheal1", healthPercentage, dw.character.hp, dw.character.hpMax);
+        dw.useSkill(2, dw.character);
+        // dw.useSkill(2, { i:2, id: dw.character.id });
+        //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
+        await sleep(250);
+        continue;
+      }
     }
 
-    if (healthPercentage < 0.5 && dw.isSkillReady(3) /* heal */ && !dw.character.fx["heal"]) {
-      console.log("low health, heal", healthPercentage, dw.character.hp, dw.character.hpMax);
-      dw.useSkill(3, dw.character);
-      //   dw.useSkill(3, { id: dw.character.id });
-      //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
-      return;
+    if (isLowHealth && !targetingMe) {
+      console.log(healthPercentage, dw.character.hp, dw.character.hpMax);
+      await sleep(250);
+      continue;
     }
 
-    if (healthPercentage < 0.25 && dw.isSkillReady(2) /* fastheal1 */ && !dw.character.fx["fastheal1"]) {
-      console.log("low health, fastheal1", healthPercentage, dw.character.hp, dw.character.hpMax);
-      dw.useSkill(2, dw.character);
-      // dw.useSkill(2, { i:2, id: dw.character.id });
-      //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
-      return;
+    const closestEntity = dw.entities
+      .filter(
+        (entity) =>
+          entity.l === dw.character.l &&
+          ((farmMobs && entity.ai && entity.r < 3) ||
+            (farmTrees && entity.tree) ||
+            (farmOre && entity.ore) ||
+            (farmGems && isGem(entity)))
+      )
+      .map((entity) => ({
+        entity,
+        distance: dw.distance(dw.character, entity),
+      }))
+      .filter((x) => x.entity && ((x.entity.tree && x.distance <= treeDistance) || !x.entity.tree))
+      .sort((a, b) => a.distance - b.distance);
+
+    const target = targetingMe ?? closestEntity[0]?.entity;
+
+    if (!target) {
+      console.log("no target, drunken walk");
+      drunkenWalk();
+      await sleep(250);
+      continue;
     }
-  }
 
-  if (isLowHealth && !targetingMe) {
-    console.log(healthPercentage, dw.character.hp, dw.character.hpMax);
-    return;
-  }
+    const distancetoTarget = dw.distance(dw.character, target);
+    const los = hasLineOfSight(target);
 
-  const closestEntity = dw.entities
-    .filter(
-      (entity) =>
-        entity.l === dw.character.l &&
-        ((farmMobs && entity.ai && entity.r < 3) ||
-          (farmTrees && entity.tree) ||
-          (farmOre && entity.ore) ||
-          (farmGems && isGem(entity)))
-    )
-    .map((entity) => ({
-      entity,
-      distance: dw.distance(dw.character, entity),
-    }))
-    .filter((x) => x.entity && ((x.entity.tree && x.distance <= treeDistance) || !x.entity.tree))
-    .sort((a, b) => a.distance - b.distance);
+    const start = snapToGrid(dw.character.x, dw.character.y, 0.5);
+    // const neigbors = getNeighbors(start, grid);
 
-  const target = targetingMe ?? closestEntity[0]?.entity;
+    drawingGroups["targetPath"] = [
+      // {
+      //   type: "path",
+      //   points: path,
+      //   color: "#DA70D6",
+      // },
+      {
+        type: "circle",
+        point: { x: target.x, y: target.y },
+        radius: 0.25,
+        color: "#DA70D6",
+      },
+      {
+        type: "line",
+        startPoint: { x: dw.character.x, y: dw.character.y },
+        endPoint: { x: target.x, y: target.y },
+        color: !los ? "#F00" : "#00FF56",
+      },
+      // ...neigbors.map((tile) => ({
+      //   type: "rectangle",
+      //   point: { x: tile.x, y: tile.y },
+      //   width: 0.5 * 96,
+      //   height: 0.5 * 96,
+      //   color: "#354acc",
+      // })),
+    ];
 
-  if (!target) {
-    console.log("no target, drunken walk");
-    drunkenWalk();
-    return;
-  }
+    const goal = snapToGrid(target.x, target.y, 0.5);
 
-  const distancetoTarget = dw.distance(dw.character, target);
-  const los = hasLineOfSight(target);
+    if (!los) {
+      console.log("no los", start, goal);
+      // // TODO: pathfind and move to first point on path
+      // const path = await findPath(start, goal, 0.5); // causes game to freeze sometimes, limit iterations?
+      // drawingGroups["targetPath"].push({
+      //   type: "path",
+      //   points: path,
+      //   color: "#DA70D6",
+      //   strokeWidth: 4,
+      // });
 
-  const start = snapToGrid(dw.character.x, dw.character.y, 0.5);
-  // const neigbors = getNeighbors(start, grid);
+      // if (path.length > 1) {
+      //   const firstPoint = path[1];
 
-  drawingGroups["targetPath"] = [
-    // {
-    //   type: "path",
-    //   points: path,
-    //   color: "#DA70D6",
-    // },
-    {
-      type: "circle",
-      point: { x: target.x, y: target.y },
-      radius: 0.25,
-      color: "#DA70D6",
-    },
-    {
-      type: "line",
-      startPoint: { x: dw.character.x, y: dw.character.y },
-      endPoint: { x: target.x, y: target.y },
-      color: !los ? "#F00" : "#00FF56",
-    },
-    // ...neigbors.map((tile) => ({
-    //   type: "rectangle",
-    //   point: { x: tile.x, y: tile.y },
-    //   width: 0.5 * 96,
-    //   height: 0.5 * 96,
-    //   color: "#354acc",
-    // })),
-  ];
+      //   dw.move(firstPoint.x, firstPoint.y);
+      // }
 
-  const goal = snapToGrid(target.x, target.y, 0.5);
+      drunkenWalk();
+      // moveToRandomValidPointNearCharacter(grid);
+      await sleep(250);
+      continue;
+    }
 
-  if (!los) {
-    console.log("no los", start, goal);
-    // // TODO: pathfind and move to first point on path
+    // const path = findLeastDangerousPath(grid, start, goal, 500);
     // const path = await findPath(start, goal, 0.5); // causes game to freeze sometimes, limit iterations?
     // drawingGroups["targetPath"].push({
     //   type: "path",
@@ -362,91 +393,79 @@ setInterval(async () => {
     //   strokeWidth: 4,
     // });
 
-    // if (path.length > 1) {
-    //   const firstPoint = path[1];
-
-    //   dw.move(firstPoint.x, firstPoint.y);
-    // }
-
-    drunkenWalk();
-    // moveToRandomValidPointNearCharacter(grid);
-    return;
-  }
-
-  // const path = findLeastDangerousPath(grid, start, goal, 500);
-  // const path = await findPath(start, goal, 0.5); // causes game to freeze sometimes, limit iterations?
-  // drawingGroups["targetPath"].push({
-  //   type: "path",
-  //   points: path,
-  //   color: "#DA70D6",
-  //   strokeWidth: 4,
-  // });
-
-  if (target.ore) {
-    const inRange = distancetoTarget <= dw.c.defaultSkills.mining.range; /* Attack */
-    if (!inRange) {
-      dw.move(target.x, target.y);
-    }
-
-    if (dw.isSkillReady("mine") && inRange) {
-      dw.setTarget(target);
-      // console.log("mine", target);
-      dw.emit("mine", { id: target.id });
-    }
-  } else if (target.tree) {
-    const inRange = distancetoTarget <= dw.c.defaultSkills.woodcutting.range; /* Attack */
-    if (!inRange) {
-      dw.move(target.x, target.y);
-    }
-
-    if (dw.isSkillReady("chop") && inRange) {
-      dw.setTarget(target);
-      // console.log("chop", target);
-      dw.emit("chop", { id: target.id });
-    }
-  } else {
-    let skillToUse = undefined;
-    for (const skill of dw.character.skills) {
-      if (!skill) continue;
-      if (!skillToUse) {
-        skillToUse = skill;
+    if (target.ore) {
+      const inRange = distancetoTarget <= dw.c.defaultSkills.mining.range; /* Attack */
+      if (!inRange) {
+        dw.move(target.x, target.y);
       }
 
-      if (skillToUse && skillToUse !== skill) {
-        const skillToUseDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
-          if (key.endsWith("Dmg")) {
-            result += value;
-          }
-          return result;
-        }, 0);
+      if (dw.isSkillReady("mine") && inRange) {
+        dw.setTarget(target);
+        // console.log("mine", target);
+        dw.emit("mine", { id: target.id });
+      }
+    } else if (target.tree) {
+      const inRange = distancetoTarget <= dw.c.defaultSkills.woodcutting.range; /* Attack */
+      if (!inRange) {
+        dw.move(target.x, target.y);
+      }
 
-        const skillDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
-          if (key.endsWith("Dmg")) {
-            result += value;
-          }
-          return result;
-        }, 0);
-
-        if (skillDamage > skillToUseDamage) {
+      if (dw.isSkillReady("chop") && inRange) {
+        dw.setTarget(target);
+        // console.log("chop", target);
+        dw.emit("chop", { id: target.id });
+      }
+    } else {
+      let skillToUse = undefined;
+      for (const skill of dw.character.skills) {
+        if (!skill) continue;
+        if (!skillToUse) {
           skillToUse = skill;
         }
+
+        if (skillToUse && skillToUse !== skill) {
+          const skillToUseDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
+            if (key.endsWith("Dmg")) {
+              result += value;
+            }
+            return result;
+          }, 0);
+
+          const skillDamage = Object.entries(dw.character.skills).reduce((result, [key, value]) => {
+            if (key.endsWith("Dmg")) {
+              result += value;
+            }
+            return result;
+          }, 0);
+
+          if (skillDamage > skillToUseDamage) {
+            skillToUse = skill;
+          }
+        }
+      }
+      const inAttackRange = distancetoTarget <= skillToUse.range; /* Attack */
+      if (!inAttackRange) {
+        dw.move(target.x, target.y);
+      } else {
+        moveToRandomValidPointNearCharacter(grid);
+      }
+
+      // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
+      if (dw.isSkillReady(skillToUse.md) && inAttackRange) {
+        dw.setTarget(target);
+        // console.log("attack");
+        dw.useSkill(skillToUse.md, target);
       }
     }
-    const inAttackRange = distancetoTarget <= skillToUse.range; /* Attack */
-    if (!inAttackRange) {
-      dw.move(target.x, target.y);
-    } else {
-      moveToRandomValidPointNearCharacter(grid);
-    }
 
-    // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
-    if (dw.isSkillReady(skillToUse.md) && inAttackRange) {
-      dw.setTarget(target);
-      // console.log("attack");
-      dw.useSkill(skillToUse.md, target);
-    }
+    await sleep(250);
   }
-}, 500);
+}
+
+setTimeout(() => {
+  void run();
+}, 1000);
+
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function findPath(start, goal, resolution = 0.5, maxOperations = 800, visualize = false) {
