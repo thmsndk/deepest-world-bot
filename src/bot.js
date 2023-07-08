@@ -269,7 +269,7 @@ setInterval(async () => {
       //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
       return;
     }
-    
+
     if (healthPercentage < 0.5 && dw.isSkillReady(3) /* heal */ && !dw.character.fx["heal"]) {
       console.log("low health, heal", healthPercentage, dw.character.hp, dw.character.hpMax);
       dw.useSkill(3, dw.character);
@@ -296,7 +296,7 @@ setInterval(async () => {
     .filter(
       (entity) =>
         entity.l === dw.character.l &&
-        ((farmMobs && entity.ai) ||
+        ((farmMobs && entity.ai && entity.r < 3) ||
           (farmTrees && entity.tree) ||
           (farmOre && entity.ore) ||
           (farmGems && isGem(entity)))

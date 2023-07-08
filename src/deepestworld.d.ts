@@ -42,10 +42,7 @@ declare global {
      * @param from
      * @param to
      */
-    distance(
-      from: { x: number; y: number },
-      to: { x: number; y: number }
-    ): number;
+    distance(from: { x: number; y: number }, to: { x: number; y: number }): number;
 
     /**
      * Moves towards x,y in a straight line
@@ -87,11 +84,10 @@ declare global {
     );
     on(eventName: string, cb: (data: unknown) => void);
 
+    emit(eventName: "merge");
+    emit(eventName: "setSpawn");
     emit(eventName: "chop", data: { id: number });
-    emit(
-      eventName: "placeItem",
-      data: { bagIndex: number; x: number; y: number }
-    );
+    emit(eventName: "placeItem", data: { bagIndex: number; x: number; y: number });
     emit(eventName: string, data: unknown);
 
     /**
@@ -116,14 +112,7 @@ declare global {
      * @param idFrom can be omitted if transfering from your character
      * @param idTo can be omitted if transfering to your character
      */
-    moveItem(
-      bagFrom: string,
-      indexFrom: number,
-      bagTo: string,
-      indexTo: number,
-      idFrom?: number,
-      idTo?: number
-    );
+    moveItem(bagFrom: string, indexFrom: number, bagTo: string, indexTo: number, idFrom?: number, idTo?: number);
 
     log: (message: any) => void;
     sendItem: (receiver: number | string, itemIndex: number) => void;
@@ -177,6 +166,10 @@ type BaseEntity = {
 };
 
 type Character = BaseEntity & {
+  dbId: number;
+
+  level: number;
+
   /**
    * Active effects on your character
    */
@@ -201,6 +194,21 @@ type Character = BaseEntity & {
     mining: DefaultSkill;
   };
 
+  skills: Array<{
+    md: string;
+    physDmg: number;
+    coldDmg: number;
+    elecDmg: number;
+    fireDmg: number;
+    acidDmg: number;
+    crit: number;
+    critMult: number;
+    range: number;
+    cost: number1;
+  }>;
+
+  gear: { [key: string]: { md: string; mods: Mods; qual: number; r: number } };
+
   spawn: { l: number; x: number; y: number };
 
   mission: {
@@ -223,28 +231,34 @@ type Character = BaseEntity & {
     timeoutAt: number;
   };
 
-  bag: Array<{
-    md: string;
-    n?: number;
-    /**
-     * The rarity
-     * 0 = white
-     * 1 = green
-     * 2 = blue
-     * 3 = purple
-     */
-    r: number;
-    /**
-     * The item level / quality
-     */
-    qual: number;
-    /**
-     * The modifiers on the item
-     */
-    mods: {
-      [key: string]: number;
-    };
-  }>;
+  bag: readonly Array<Item>;
+
+  craftIn: readonly Array<Item>;
+};
+
+export type Item = {
+  md: string;
+  n?: number;
+  /**
+   * The rarity
+   * 0 = white
+   * 1 = green
+   * 2 = blue
+   * 3 = purple
+   */
+  r: number;
+  /**
+   * The item level / quality
+   */
+  qual: number;
+  /**
+   * The modifiers on the item
+   */
+  mods: Mods;
+};
+
+type Mods = {
+  [key: string]: number;
 };
 
 type DefaultSkill = {
@@ -259,7 +273,11 @@ type DefaultSkill = {
   cost: null;
 };
 
-type Entity = BaseEntity & {
+export type Entity = BaseEntity & {
+  ownerDbId: number;
+
+  level: number;
+  
   md: string;
   /**
    * Is it a monster?
@@ -284,6 +302,12 @@ type Entity = BaseEntity & {
    */
   rarity: number;
 
+  /**
+   * The target of the monster
+   * `dw.character.id` can be used to check if it is targeting you
+   */
+  targetId: number;
+
   // mission id when we have accepted the mission as well as runners.
   storage: Array<{
     level: number;
@@ -293,6 +317,8 @@ type Entity = BaseEntity & {
     missionId: number;
     runners: string[];
   }>;
+
+  hostile: boolean;
 };
 
 type Entities = Array<Entity>;

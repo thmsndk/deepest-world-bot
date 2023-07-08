@@ -6,7 +6,7 @@ const stack: TaskArray[] = [];
 export const taskRegistry: {
   [taskName: string]: {
     priority?: number;
-    run: (...args: any) => number | void;
+    run: (...args: any) => TASK_STATE | void;
   };
 } = {};
 
@@ -20,19 +20,35 @@ export function addTask(...tasks: TaskArray) {
   stack.push(tasks);
 }
 
-export function process() {
-  const current = stack.pop();
-  if (!current) {
-    return;
-  }
+export enum TASK_STATE {
+  DONE = 0,
+  EVALUATE_NEXT_TICK = 1,
+}
 
-  for (const [taskName, ...args] of current) {
-    const task = taskRegistry[taskName];
-    if (task) {
-      task.run(...args);
-      // TODO: if task is not done add it to the stack again, this allows the next run to put more important tasks onto the stack
-    } else {
-      console.error(taskName, "was not found in taskRegistry");
+export function process() {
+  let processTasks = true;
+  while (processTasks) {
+    const current = stack.pop();
+    if (!current) {
+      return;
+    }
+
+    // TODO: should subtask be evaluated before the main task is done?
+    for (const [taskName, ...args] of current) {
+      const task = taskRegistry[taskName];
+      if (task) {
+        // TODO: output processing time.
+        const result = task.run(...args);
+        // TODO: if task is not done add it to the stack again, this allows the next run to put more important tasks onto the stack
+        // if we are not done killing the targets targeting us, we should continue this task
+        switch (result) {
+          case TASK_STATE.EVALUATE_NEXT_TICK:
+            processTasks = false;
+            break;
+        }
+      } else {
+        console.error(taskName, "was not found in taskRegistry");
+      }
     }
   }
 }

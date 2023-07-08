@@ -1,4 +1,4 @@
-import { TaskTuple, taskRegistry } from ".";
+import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 const TASK_NAME = "heal-self";
 
 export function selfHeal(): TaskTuple {
@@ -23,7 +23,7 @@ taskRegistry[TASK_NAME] = {
         dw.useSkill(4, dw.character);
         //   dw.useSkill(3, { id: dw.character.id });
         //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
-        return;
+        return TASK_STATE.DONE;
       }
 
       if (
@@ -40,7 +40,7 @@ taskRegistry[TASK_NAME] = {
         dw.useSkill(3, dw.character);
         //   dw.useSkill(3, { id: dw.character.id });
         //   dw.emit("skill", { md: "heal", i: 3, id: dw.character.id });
-        return;
+        return TASK_STATE.DONE;
       }
 
       if (
@@ -57,8 +57,9 @@ taskRegistry[TASK_NAME] = {
         dw.useSkill(2, dw.character);
         // dw.useSkill(2, { i:2, id: dw.character.id });
         //   dw.emit("skill", { md: "fastheal1", i: 2, id: dw.character.id });
-        return;
+        return TASK_STATE.DONE;
       }
     }
+    return TASK_STATE.DONE;
   },
 };
