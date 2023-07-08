@@ -82,8 +82,15 @@ declare global {
         }>
       ) => void
     );
+
+    on(
+      eventName: "hit",
+      cb: (data: { projId: number; md?: number; actor: nummber; target: number; amount: nubmer; rip: boolean }) => void
+    );
     on(eventName: string, cb: (data: unknown) => void);
 
+    emit(eventName: "unstuck");
+    emit(eventName: "sortInv");
     emit(eventName: "merge");
     emit(eventName: "setSpawn");
     emit(eventName: "chop", data: { id: number });
@@ -277,7 +284,7 @@ export type Entity = BaseEntity & {
   ownerDbId: number;
 
   level: number;
-  
+
   md: string;
   /**
    * Is it a monster?
@@ -300,7 +307,7 @@ export type Entity = BaseEntity & {
    * 1 is a normal monster.
    * 2+ are bosses.
    */
-  rarity: number;
+  r: number;
 
   /**
    * The target of the monster

@@ -10,7 +10,9 @@
 import { registerConsoleCommands } from "./console";
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
+import { explore } from "./tasks/exploration";
 import { selfHeal } from "./tasks/heal-self";
+import { mission } from "./tasks/mission";
 import { sleep } from "./utility";
 
 dw.debug = 1;
@@ -18,8 +20,6 @@ dw.debug = 1;
 async function run() {
   // Loop  state transitions that pushes a state onto the stack
   while (true) {
-    // TODO: or perhaps introduce a priority queue, so we can add tasks in whatever order.
-
     // TODO: start, join, abandon mission
     // TODO: Farm trees
     // TODO: Farm ore
@@ -28,7 +28,9 @@ async function run() {
     // craft iron bars?
     // disenchant items?
 
-    // TODO: exploration task
+    addTask(explore());
+
+    addTask(mission());
 
     addTask(defendSelf());
 
@@ -41,7 +43,7 @@ async function run() {
 
     // TODO add default tasks? farm tree, farm ore, farm friendly goo
     // run tasks this tick
-    process();
+    await process();
     await sleep(250);
   }
 }

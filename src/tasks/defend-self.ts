@@ -1,4 +1,5 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
+import { attackAndRandomWalk } from "../combat";
 import { Entity } from "../deepestworld";
 import { generateGrid, hasLineOfSight, moveToRandomValidPointNearCharacter } from "../utility";
 const TASK_NAME = "defend-self";
@@ -9,7 +10,7 @@ export function defendSelf(): TaskTuple {
 
 let target: { distance: number; entity: Entity } | undefined = undefined;
 taskRegistry[TASK_NAME] = {
-  run: () => {
+  run:async  () => {
     // TODO: in range to attack target? then do so.
     // Not in range? pick the lowest health in range as a temp target
 
@@ -65,47 +66,8 @@ taskRegistry[TASK_NAME] = {
     // TODO: if we have no line of sight, find a path? drunkenWalk?
     // should it return a subtask to be run? and then return to this task?
 
-    // TODO: attack target
-    // TODO: kite target
-    let skillToUse = undefined;
-    let skillToUseDamage = undefined;
-    for (const skill of dw.character.skills) {
-      if (!skill) continue;
-
-      if (skillToUse !== skill) {
-        const skillDamage = Object.entries(skill).reduce((result, [key, value]) => {
-          if (key.endsWith("Dmg")) {
-            result += value;
-          }
-          return result;
-        }, 0);
-
-        if (!skillToUseDamage || skillDamage > skillToUseDamage) {
-          skillToUse = skill;
-          skillToUseDamage = skillDamage;
-        }
-      }
-    }
-
-    if (!skillToUse) {
-      console.warn("no skill to use");
+    if(attackAndRandomWalk(target)){
       return TASK_STATE.DONE;
-    }
-
-    const inAttackRange = target.distance <= skillToUse.range;
-    if (!inAttackRange) {
-      dw.move(target.entity.x, target.entity.y);
-    } else {
-      // TODO: should this be a subtask? grid should be a service or context we can access
-      const grid = generateGrid();
-      moveToRandomValidPointNearCharacter(grid);
-    }
-
-    // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
-    if (dw.isSkillReady(skillToUse.md) && inAttackRange) {
-      dw.setTarget(target.entity);
-      // console.log("attack");
-      dw.useSkill(skillToUse.md, target.entity);
     }
 
     return TASK_STATE.EVALUATE_NEXT_TICK;

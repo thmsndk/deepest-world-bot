@@ -4,7 +4,7 @@ export const TASK_FARM_TREES = "farmTrees";
 // TODO: perhaps a farm single tree, that is dedicated to chopping down a tree
 taskRegistry[TASK_FARM_TREES] = {
   priority: 10,
-  run: () => {
+  run: async () => {
     // run farming trees
     // TODO a specific level?, a specific place?
     // TODO: danger levels near target? add clear danger task?

@@ -6,7 +6,7 @@ const stack: TaskArray[] = [];
 export const taskRegistry: {
   [taskName: string]: {
     priority?: number;
-    run: (...args: any) => TASK_STATE | void;
+    run: (...args: any) => Promise<TASK_STATE | void>;
   };
 } = {};
 
@@ -25,30 +25,36 @@ export enum TASK_STATE {
   EVALUATE_NEXT_TICK = 1,
 }
 
-export function process() {
+export async function process() {
+  console.debug("TICK");
   let processTasks = true;
   while (processTasks) {
-    const current = stack.pop();
-    if (!current) {
-      return;
-    }
-
-    // TODO: should subtask be evaluated before the main task is done?
-    for (const [taskName, ...args] of current) {
-      const task = taskRegistry[taskName];
-      if (task) {
-        // TODO: output processing time.
-        const result = task.run(...args);
-        // TODO: if task is not done add it to the stack again, this allows the next run to put more important tasks onto the stack
-        // if we are not done killing the targets targeting us, we should continue this task
-        switch (result) {
-          case TASK_STATE.EVALUATE_NEXT_TICK:
-            processTasks = false;
-            break;
-        }
-      } else {
-        console.error(taskName, "was not found in taskRegistry");
+    try {
+      const current = stack.pop();
+      if (!current) {
+        return;
       }
+
+      // TODO: should subtask be evaluated before the main task is done?
+      for (const [taskName, ...args] of current) {
+        const task = taskRegistry[taskName];
+        if (task) {
+          console.debug(taskName);
+          // TODO: output processing time.
+          const result = await task.run(...args);
+          // TODO: if task is not done add it to the stack again, this allows the next run to put more important tasks onto the stack
+          // if we are not done killing the targets targeting us, we should continue this task
+          switch (result) {
+            case TASK_STATE.EVALUATE_NEXT_TICK:
+              processTasks = false;
+              break;
+          }
+        } else {
+          console.error(taskName, "was not found in taskRegistry");
+        }
+      }
+    } catch (error) {
+      console.error("process failed", error);
     }
   }
 }

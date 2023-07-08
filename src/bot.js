@@ -84,9 +84,9 @@ function getGemColor(entity) {
 }
 
 async function run() {
-  console.log('starting run function')
+  console.log("starting run function");
   while (true) {
-    console.log('TICK')
+    console.log("TICK");
     drawingGroups["gems"] = [
       ...dw.entities
         .filter((e) => GEMS.some((g) => e.md.indexOf(g) > -1))
@@ -127,7 +127,6 @@ async function run() {
 
     // dw.character.bag.findIndex(b => b && b.md === "missionBag")
     // if we have a mission bag, we probably just completed a mission
-
     const missionBagIndex = dw.character.bag.findIndex((b) => b && b.md === "missionBag");
 
     if (!farmMissions && dw.character.bag.filter((b) => !b).length === 1) {
@@ -465,7 +464,6 @@ async function run() {
 setTimeout(() => {
   void run();
 }, 1000);
-
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function findPath(start, goal, resolution = 0.5, maxOperations = 800, visualize = false) {
@@ -953,6 +951,41 @@ function getTerrainInStraightLine(p1, p2) {
 function hasLineOfSight(target) {
   const straightPath = getTerrainInStraightLine(dw.character, target);
   return !straightPath.some((x) => x > 0 /* Air / Walkable */);
+}
+
+function hasLineOfSightBresenham(target) {
+  const p1 = dw.character;
+  const p2 = target;
+  
+  const dx = Math.abs(p2.x - p1.x);
+  const dy = Math.abs(p2.y - p1.y);
+
+  const incrementX = p2.x > p1.x ? 1 : -1;
+  const incrementY = p2.y > p1.y ? 1 : -1;
+
+  let currentX = p1.x;
+  let currentY = p1.y;
+  let error = 0;
+  let errorPrev = 0;
+
+  while (!(currentX === p2.x && currentY === p2.y)) {
+    if (dw.getTerrainAt({ l: p1.l, currentX, currentY }) !== 0) {
+      return false;
+    }
+
+    errorPrev = error;
+    if (errorPrev > -dx) {
+      error -= dy;
+      currentX += incrementX;
+    }
+
+    if (errorPrev < dy) {
+      error += dx;
+      currentY += incrementY;
+    }
+  }
+
+  return true;
 }
 
 function getNeighbors(tile, grid, resolution = 0.5) {

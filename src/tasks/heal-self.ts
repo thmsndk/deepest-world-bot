@@ -6,7 +6,7 @@ export function selfHeal(): TaskTuple {
 }
 
 taskRegistry[TASK_NAME] = {
-  run: () => {
+  run: async () => {
     const healthPercentage = dw.character.hp / dw.character.hpMax;
     const isLowHealth = healthPercentage < 0.25;
 
