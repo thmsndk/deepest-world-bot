@@ -12,7 +12,7 @@ taskRegistry[TASK_NAME] = {
   run: async () => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
     const missionBoards = dw.entities.filter(
-      (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionBoard" && entity.storage.length > 0
+      (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionBoard"
     );
 
     // TODO We could store  "last mission" and detect if dw.character.mission is no longer the same
@@ -44,10 +44,10 @@ taskRegistry[TASK_NAME] = {
         const inRange = dw.distance(dw.character, board) <= 2;
         if (!inRange) {
           dw.move(board.x, board.y);
-          await sleep(250);
+          return TASK_STATE.EVALUATE_NEXT_TICK;
         } else {
           dw.enterMission();
-          await sleep(250);
+          return TASK_STATE.EVALUATE_NEXT_TICK;
         }
       } else {
         const board = missionBoards[0];
@@ -67,7 +67,7 @@ taskRegistry[TASK_NAME] = {
         // populate missionboard
         if (missionsInBag.length > 0) {
           // TODO: prioririze enchanted missions
-          const boardHasMissions = board.storage.some((s) => !s);
+          const boardHasMissions = board.storage.some((s) => s);
 
           // Only fill up board when it is empty, that way we run all missions
           if (!boardHasMissions) {
@@ -76,7 +76,7 @@ taskRegistry[TASK_NAME] = {
               if (!mission) {
                 if (!boardInRange) {
                   dw.move(board.x, board.y);
-                  return TASK_STATE.DONE;
+                  return TASK_STATE.EVALUATE_NEXT_TICK;
                 } else {
                   const missionToAdd = missionsInBag.pop();
                   if (!missionToAdd) break;
@@ -97,9 +97,10 @@ taskRegistry[TASK_NAME] = {
           if (mission) {
             if (!boardInRange) {
               dw.move(board.x, board.y);
-              return TASK_STATE.DONE;
+              return TASK_STATE.EVALUATE_NEXT_TICK;
             } else {
               dw.acceptMission(board.id, index);
+              return TASK_STATE.EVALUATE_NEXT_TICK;
             }
             break;
           }
@@ -119,8 +120,8 @@ taskRegistry[TASK_NAME] = {
     const target = closestEntity[0];
 
     // TODO: setting target in context would make things easier
-    if (attackAndRandomWalk(target)) {
-      return TASK_STATE.DONE;
+    if (attackAndRandomWalk(target) === 1) {
+      return TASK_STATE.EVALUATE_NEXT_TICK; // To prevent exploration task overriding our movement.
     }
 
     return TASK_STATE.DONE;

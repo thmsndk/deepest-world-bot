@@ -1,3 +1,5 @@
+import { sleep } from "../utility";
+
 // https://en.wikipedia.org/wiki/Pushdown_automaton
 export type TaskTuple = [state: string, ...args: any];
 export type TaskArray = Array<TaskTuple>;
@@ -49,6 +51,8 @@ export async function process() {
               processTasks = false;
               break;
           }
+
+          await sleep(50);
         } else {
           console.error(taskName, "was not found in taskRegistry");
         }

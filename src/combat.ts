@@ -1,9 +1,15 @@
 import { Entity } from "./deepestworld";
-import { generateGrid, moveToRandomValidPointNearCharacter } from "./utility";
+import { generateGrid, hasLineOfSight, moveToRandomValidPointNearCharacter } from "./utility";
 
 export function attackAndRandomWalk(target: { distance: number; entity: Entity }) {
   if (!target) {
     return true;
+  }
+
+  const los = hasLineOfSight(target.entity);
+  if (!los) {
+    console.log("no line of sight");
+    return -1;
   }
 
   let skillToUse = undefined;
@@ -28,22 +34,25 @@ export function attackAndRandomWalk(target: { distance: number; entity: Entity }
 
   if (!skillToUse) {
     console.warn("no skill to use");
-    return true;
+    return -1;
   }
 
   const inAttackRange = target.distance <= skillToUse.range;
   if (!inAttackRange) {
     dw.move(target.entity.x, target.entity.y);
-  } else {
-    // TODO: should this be a subtask? grid should be a service or context we can access
-    const grid = generateGrid();
-    moveToRandomValidPointNearCharacter(grid);
+    return 1;
   }
+
+  // TODO: should this be a subtask? grid should be a service or context we can access
+  const grid = generateGrid();
+  moveToRandomValidPointNearCharacter(grid);
 
   // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
   if (dw.isSkillReady(skillToUse.md) && inAttackRange) {
     dw.setTarget(target.entity);
     // console.log("attack");
     dw.useSkill(skillToUse.md, target.entity);
+
+    return 1;
   }
 }

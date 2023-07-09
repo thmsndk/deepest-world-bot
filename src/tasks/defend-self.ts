@@ -10,7 +10,7 @@ export function defendSelf(): TaskTuple {
 
 let target: { distance: number; entity: Entity } | undefined = undefined;
 taskRegistry[TASK_NAME] = {
-  run:async  () => {
+  run: async () => {
     // TODO: in range to attack target? then do so.
     // Not in range? pick the lowest health in range as a temp target
 
@@ -66,7 +66,7 @@ taskRegistry[TASK_NAME] = {
     // TODO: if we have no line of sight, find a path? drunkenWalk?
     // should it return a subtask to be run? and then return to this task?
 
-    if(attackAndRandomWalk(target)){
+    if (attackAndRandomWalk(target) === -1) {
       return TASK_STATE.DONE;
     }
 
