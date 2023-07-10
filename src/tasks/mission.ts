@@ -11,8 +11,8 @@ export function mission(): TaskTuple {
 taskRegistry[TASK_NAME] = {
   run: async () => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
-    const missionBoards = dw.entities.filter(
-      (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionBoard"
+    const missionTables = dw.entities.filter(
+      (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionTable"
     );
 
     // TODO We could store  "last mission" and detect if dw.character.mission is no longer the same
@@ -37,20 +37,21 @@ taskRegistry[TASK_NAME] = {
       await sleep(5000);
     }
 
-    if (missionBoards.length > 0) {
+    if (missionTables.length > 0) {
       if (dw.character.mission) {
         // Join / Enter mission if we have a mission in progress
-        const board = missionBoards[0];
+        const board = missionTables[0];
         const inRange = dw.distance(dw.character, board) <= 2;
         if (!inRange) {
           dw.move(board.x, board.y);
           return TASK_STATE.EVALUATE_NEXT_TICK;
         } else {
           dw.enterMission();
+          // TODO: floodfill to detect if we are stuck and abandon
           return TASK_STATE.EVALUATE_NEXT_TICK;
         }
       } else {
-        const board = missionBoards[0];
+        const board = missionTables[0];
         const boardInRange = dw.distance(dw.character, board) <= 2;
 
         const missionsInBag = dw.character.bag

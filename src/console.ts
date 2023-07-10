@@ -32,7 +32,7 @@ function setSpawn() {
 
 export async function sacItems(maxLevel = 5, maxRarity = 2) {
   const altar = dw.entities.find(
-    (entity) => entity && entity.md === "sacAltar1" && entity.ownerDbId === dw.character.dbId
+    (entity) => entity && entity.md === "enchantingDevice1" && entity.ownerDbId === dw.character.dbId
   );
 
   if (!altar) {
