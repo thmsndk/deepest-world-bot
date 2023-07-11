@@ -61,9 +61,18 @@ taskRegistry[TASK_NAME] = {
               x.item &&
               x.item.md.endsWith("Mission") &&
               x.item.qual < 8 && // only auto add up to lvl 7 missions
-              x.item.r < 3 &&
+              // x.item.r < 3 &&
               !x.item.n
-          );
+          ).sort((a,b)=> {
+            if(a.item.r !== b.item.r){
+                // sort by rarity DESC
+                return b.item.r - a.item.r;
+            }
+
+            // sort by level ASC, prefering low lvl missions
+            return a.item.qual - b.item.qual;
+
+          });
 
         // populate missionboard
         if (missionsInBag.length > 0) {
