@@ -30,6 +30,7 @@ function setSpawn() {
   dw.set("spawns", spawns);
 }
 
+// TODO: ability to not sac specific types if items, with certain enchants.
 export async function sacItems(maxLevel = 5, maxRarity = 2) {
   const altar = dw.entities.find(
     (entity) => entity && entity.md === "enchantingDevice1" && entity.ownerDbId === dw.character.dbId
