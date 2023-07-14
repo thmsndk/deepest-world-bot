@@ -5,6 +5,9 @@
 // TODO: might need to store a reference to what we push into drawings so we can "destroy" them
 // TODO: How do we make sure that the drawing exists in between renders?
 
+// const camOffsetX = Math.round(cx * 96 - Math.floor(ctx.canvas.width / 2));
+// const camOffsetY = Math.round(cy * 96 - Math.floor(ctx.canvas.width / 2));
+
 // Drawing groups lets you clear the groups in another loop thus gaining control over when it resets
 let drawingGroups = {};
 // Define the drawings collection
@@ -29,25 +32,10 @@ function drawStuff(ctx, drawings) {
   drawings.forEach((drawing) => {
     // Use utility functions to render the shape based on the drawing type
     if (drawing.type === "circle") {
-      const canvasCirclePoint = mapPointToCanvas(
-        ctx.canvas.width,
-        ctx.canvas.height,
-        drawing.point
-      );
-      drawCircle(
-        ctx,
-        canvasCirclePoint.x,
-        canvasCirclePoint.y,
-        drawing.radius,
-        drawing.color,
-        drawing.strokeWidth
-      );
+      const canvasCirclePoint = mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, drawing.point);
+      drawCircle(ctx, canvasCirclePoint.x, canvasCirclePoint.y, drawing.radius, drawing.color, drawing.strokeWidth);
     } else if (drawing.type === "rectangle") {
-      const canvasRectanglePoint = mapPointToCanvas(
-        ctx.canvas.width,
-        ctx.canvas.height,
-        drawing.point
-      );
+      const canvasRectanglePoint = mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, drawing.point);
       drawRectangle(
         ctx,
         canvasRectanglePoint.x,
@@ -58,16 +46,8 @@ function drawStuff(ctx, drawings) {
         drawing.strokeWidth
       );
     } else if (drawing.type === "line") {
-      const canvasStartPoint = mapPointToCanvas(
-        ctx.canvas.width,
-        ctx.canvas.height,
-        drawing.startPoint
-      );
-      const canvasEndPoint = mapPointToCanvas(
-        ctx.canvas.width,
-        ctx.canvas.height,
-        drawing.endPoint
-      );
+      const canvasStartPoint = mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, drawing.startPoint);
+      const canvasEndPoint = mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, drawing.endPoint);
       drawLine(
         ctx,
         canvasStartPoint.x,
@@ -78,9 +58,7 @@ function drawStuff(ctx, drawings) {
         drawing.strokeWidth
       );
     } else if (drawing.type === "path") {
-      const canvasPoints = drawing.points.map((point) =>
-        mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, point)
-      );
+      const canvasPoints = drawing.points.map((point) => mapPointToCanvas(ctx.canvas.width, ctx.canvas.height, point));
       drawPath(ctx, canvasPoints, drawing.color, drawing.strokeWidth);
     }
   });
@@ -130,26 +108,15 @@ function addDrawExamples() {
 
 // Function to map a point to the canvas
 function mapPointToCanvas(canvasWidth, canvasHeight, point) {
-  const canvasX =
-    (point.x - dw.character.x) * 96 /* scaling? */ + canvasWidth / 2;
-  const canvasY =
-    (point.y - dw.character.y) * 96 /* scaling? */ + canvasHeight / 2;
+  const canvasX = (point.x - dw.character.x) * 96 /* scaling? */ + canvasWidth / 2;
+  const canvasY = (point.y - dw.character.y) * 96 /* scaling? */ + canvasHeight / 2;
   return { x: canvasX, y: canvasY };
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
 
 // Utility function to draw a circle on the canvas
-function drawCircle(
-  context,
-  x,
-  y,
-  radius,
-  borderColor,
-  borderWidth = 2,
-  fillColor = null,
-  fillAlpha = null
-) {
+function drawCircle(context, x, y, radius, borderColor, borderWidth = 2, fillColor = null, fillAlpha = null) {
   context.beginPath();
   context.arc(x, y, radius * 96 /* scaling is 96 apparently */, 0, 2 * Math.PI);
 
@@ -168,17 +135,7 @@ function drawCircle(
 }
 
 // Utility function to draw a rectangle on the canvas
-function drawRectangle(
-  context,
-  x,
-  y,
-  width,
-  height,
-  borderColor,
-  borderWidth = 2,
-  fillColor = null,
-  fillAlpha = null
-) {
+function drawRectangle(context, x, y, width, height, borderColor, borderWidth = 2, fillColor = null, fillAlpha = null) {
   // make x and y the center of the rectangle
   const adjustedX = x - width / 2;
   const adjustedY = y - height / 2;
@@ -223,4 +180,55 @@ function drawPath(context, points, color, lineWidth = 2, strokeType) {
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash
   //   context.setLineDash(strokeType);
   context.stroke();
+}
+
+function drawText() {
+  ctx.font = "18px arial";
+  ctx.textAlign = "center";
+  const name = `${monster.md} ${monster.level}${"+".repeat(monster.r ?? 0)} ${Number(dist).toFixed(2)}`;
+  ctx.strokeText(name, x, y - 8);
+  ctx.fillText(name, x, y - 8);
+}
+
+function drawProgressBar() {
+  ctx.fillStyle = `rgb(0, 0, 0, 0.5)`;
+
+  ctx.beginPath();
+  ctx.rect(x - 96 / 2, y, 96, 8);
+  ctx.fill();
+
+  ctx.strokeStyle = "black";
+  ctx.fillStyle = "red";
+
+  ctx.beginPath();
+  ctx.rect(x - 96 / 2, y, (96 * monster.hp) / monster.hpMax, 8);
+  ctx.fill();
+
+  ctx.fillStyle = `rgb(255, 255, 255, 0.3)`;
+
+  ctx.beginPath();
+  ctx.rect(x - 96 / 2, y, 96, 4);
+  ctx.fill();
+
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.rect(x - 96 / 2, y, 96, 8);
+  ctx.stroke();
+
+  ctx.strokeStyle = "black";
+  ctx.fillStyle = "white";
+
+  ctx.lineWidth = 4;
+
+  ctx.font = "18px arial";
+  ctx.textAlign = "center";
+  const name = `${monster.md} ${monster.level}${"+".repeat(monster.r ?? 0)} ${Number(dist).toFixed(2)}`;
+  ctx.strokeText(name, x, y - 8);
+  ctx.fillText(name, x, y - 8);
+
+  ctx.lineWidth = 2;
+  ctx.font = "12px arial";
+  ctx.strokeText(monster.hp, x, y + 8);
+  ctx.fillText(monster.hp, x, y + 8);
 }

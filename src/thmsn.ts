@@ -8,6 +8,7 @@
  */
 
 import { registerConsoleCommands } from "./console";
+import { onDrawEnd } from "./draw";
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
 import { explore } from "./tasks/exploration";
@@ -51,6 +52,7 @@ async function run() {
 void run();
 
 registerConsoleCommands();
+onDrawEnd();
 
 // todo: use hit event instead
 dw.on("diff", (data) => {

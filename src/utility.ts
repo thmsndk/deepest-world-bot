@@ -1,3 +1,5 @@
+import { Rectangle, drawingGroups } from "./draw";
+
 export function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -142,15 +144,17 @@ export function generateGrid(gridSize = 30, resolution = 0.5) {
       return "red";
     }
   };
-  // drawingGroups["dangerGrid"] = [
-  //   ...grid.map((tile) => ({
-  //     type: "rectangle",
-  //     point: { x: tile.x, y: tile.y },
-  //     width: resolution * 96,
-  //     height: resolution * 96,
-  //     color: getTileColor(tile),
-  //   })),
-  // ];
+  drawingGroups["dangerGrid"] = [
+    ...grid
+      .filter((tile) => tile.danger > 0)
+      .map<Rectangle>((tile) => ({
+        type: "rectangle",
+        point: { x: tile.x, y: tile.y },
+        width: resolution * 96,
+        height: resolution * 96,
+        color: getTileColor(tile),
+      })),
+  ];
   return grid;
 }
 

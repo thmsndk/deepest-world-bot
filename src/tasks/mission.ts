@@ -88,7 +88,7 @@ taskRegistry[TASK_NAME] = {
                   dw.move(board.x, board.y);
                   return TASK_STATE.EVALUATE_NEXT_TICK;
                 } else {
-                  const missionToAdd = missionsInBag.pop();
+                  const missionToAdd = missionsInBag.shift();
                   if (!missionToAdd) break;
                   dw.moveItem("bag", missionToAdd.bagIndex, "storage", index, undefined, board.id);
                 }

@@ -68,6 +68,8 @@ declare global {
      */
     setTarget(target: number | { id: number });
 
+    on(eventName: "drawEnd", cb: (ctx: CanvasRenderingContext2D, cx: number, cy: number) => void);
+
     on(
       eventName: "diff",
       cb: (

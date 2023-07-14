@@ -1,6 +1,7 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
 import { Entity } from "../deepestworld";
+import { drawingGroups } from "../draw";
 import { generateGrid, hasLineOfSight, moveToRandomValidPointNearCharacter } from "../utility";
 const TASK_NAME = "defend-self";
 
@@ -11,6 +12,7 @@ export function defendSelf(): TaskTuple {
 let target: { distance: number; entity: Entity } | undefined = undefined;
 taskRegistry[TASK_NAME] = {
   run: async () => {
+    drawingGroups["targetPath"] = [];
     // TODO: in range to attack target? then do so.
     // Not in range? pick the lowest health in range as a temp target
 
@@ -31,33 +33,32 @@ taskRegistry[TASK_NAME] = {
 
     const los = hasLineOfSight(target.entity);
 
-    // TODO: draw line of sight
-    // // drawingGroups["targetPath"] = [
-    // //   // {
-    // //   //   type: "path",
-    // //   //   points: path,
-    // //   //   color: "#DA70D6",
-    // //   // },
-    // //   {
-    // //     type: "circle",
-    // //     point: { x: target.x, y: target.y },
-    // //     radius: 0.25,
-    // //     color: "#DA70D6",
-    // //   },
-    // //   {
-    // //     type: "line",
-    // //     startPoint: { x: dw.character.x, y: dw.character.y },
-    // //     endPoint: { x: target.x, y: target.y },
-    // //     color: !los ? "#F00" : "#00FF56",
-    // //   },
-    // //   // ...neigbors.map((tile) => ({
-    // //   //   type: "rectangle",
-    // //   //   point: { x: tile.x, y: tile.y },
-    // //   //   width: 0.5 * 96,
-    // //   //   height: 0.5 * 96,
-    // //   //   color: "#354acc",
-    // //   // })),
-    // // ];
+    drawingGroups["targetPath"] = [
+      // {
+      //   type: "path",
+      //   points: path,
+      //   color: "#DA70D6",
+      // },
+      {
+        type: "circle",
+        point: { x: target.entity.x, y: target.entity.y },
+        radius: 0.25,
+        color: "#DA70D6",
+      },
+      {
+        type: "line",
+        startPoint: { x: dw.character.x, y: dw.character.y },
+        endPoint: { x: target.entity.x, y: target.entity.y },
+        color: !los ? "#F00" : "#00FF56",
+      },
+      // ...neigbors.map((tile) => ({
+      //   type: "rectangle",
+      //   point: { x: tile.x, y: tile.y },
+      //   width: 0.5 * 96,
+      //   height: 0.5 * 96,
+      //   color: "#354acc",
+      // })),
+    ];
 
     if (!los) {
       return TASK_STATE.DONE;
