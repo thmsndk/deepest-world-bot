@@ -328,6 +328,11 @@ export type Entity = BaseEntity & {
   }>;
 
   hostile: boolean;
+
+    /** Entity current health */
+    hp: number;
+    /** Entity maximum health */
+    hpMax: number;
 };
 
 type Entities = Array<Entity>;

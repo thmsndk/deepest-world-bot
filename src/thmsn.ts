@@ -9,6 +9,7 @@
 
 import { registerConsoleCommands } from "./console";
 import { onDrawEnd } from "./draw";
+import { drawNameplates } from "./draw-nameplates";
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
 import { explore } from "./tasks/exploration";
@@ -54,6 +55,10 @@ void run();
 registerConsoleCommands();
 onDrawEnd();
 
+setInterval(() => {
+  drawNameplates();
+}, 250);
+
 // todo: use hit event instead
 dw.on("diff", (data) => {
   // TODO: unsure about diff structure
@@ -66,3 +71,4 @@ dw.on("diff", (data) => {
     // addTask(selfDeath());
   }
 });
+

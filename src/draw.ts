@@ -1,12 +1,12 @@
 /**
  * DRAW STUFF v0.0.2
  */
-interface Point {
+export interface Point {
   x: number;
   y: number;
 }
 
-type Drawing = Circle | Rectangle | Line | Path;
+type Drawing = Circle | Rectangle | Line | Path | Text;
 
 export interface Circle {
   type: "circle";
@@ -44,9 +44,20 @@ export interface Path {
   strokeWidth?: number;
 }
 
+export interface Text {
+  type: "text";
+  point: Point;
+  text: string;
+  font?: string;
+  textAlign?: CanvasTextAlign;
+  strokeStyle?: string;
+  fillStyle?: string;
+  lineWidth?: number;
+}
+
 // TODO: might need to store a reference to what we push into drawings so we can "destroy" them
 // TODO: How do we make sure that the drawing exists in between renders?
-const MAP_SCALE = 96;
+export const MAP_SCALE = 96;
 // Drawing groups lets you clear the groups in another loop thus gaining control over when it resets
 export const drawingGroups: { [key: string]: Drawing[] } = {};
 // Define the drawings collection
@@ -78,89 +89,71 @@ function drawStuff(ctx: CanvasRenderingContext2D, camOffset: Point, drawings: Dr
   // Iterate over the drawings collection
   drawings.forEach((drawing) => {
     // Use utility functions to render the shape based on the drawing type
-    if (drawing.type === "circle") {
-      const canvasCirclePoint = mapPointToCamera(camOffset, drawing.point);
-      drawCircle(
-        ctx,
-        canvasCirclePoint.x,
-        canvasCirclePoint.y,
-        drawing.radius,
-        drawing.color,
-        drawing.strokeWidth,
-        drawing.fillColor,
-        drawing.fillAlpha
-      );
-    } else if (drawing.type === "rectangle") {
-      const canvasRectanglePoint = mapPointToCamera(camOffset, drawing.point);
-      drawRectangle(
-        ctx,
-        canvasRectanglePoint.x,
-        canvasRectanglePoint.y,
-        drawing.width,
-        drawing.height,
-        drawing.color,
-        drawing.strokeWidth,
-        drawing.fillColor,
-        drawing.fillAlpha
-      );
-    } else if (drawing.type === "line") {
-      const canvasStartPoint = mapPointToCamera(camOffset, drawing.startPoint);
-      const canvasEndPoint = mapPointToCamera(camOffset, drawing.endPoint);
-      drawLine(
-        ctx,
-        canvasStartPoint.x,
-        canvasStartPoint.y,
-        canvasEndPoint.x,
-        canvasEndPoint.y,
-        drawing.color,
-        drawing.strokeWidth
-      );
-    } else if (drawing.type === "path") {
-      const canvasPoints = drawing.points.map((point) => mapPointToCamera(camOffset, point));
-      drawPath(ctx, canvasPoints, drawing.color, drawing.strokeWidth);
-    }
-  });
-}
+    switch (drawing.type) {
+      case "circle":
+        const canvasCirclePoint = mapPointToCamera(camOffset, drawing.point);
+        drawCircle(
+          ctx,
+          canvasCirclePoint.x,
+          canvasCirclePoint.y,
+          drawing.radius,
+          drawing.color,
+          drawing.strokeWidth,
+          drawing.fillColor,
+          drawing.fillAlpha
+        );
+        break;
+      case "rectangle":
+        const canvasRectanglePoint = mapPointToCamera(camOffset, drawing.point);
+        drawRectangle(
+          ctx,
+          canvasRectanglePoint.x,
+          canvasRectanglePoint.y,
+          drawing.width,
+          drawing.height,
+          drawing.color,
+          drawing.strokeWidth,
+          drawing.fillColor,
+          drawing.fillAlpha
+        );
+        break;
+      case "line":
+        const canvasStartPoint = mapPointToCamera(camOffset, drawing.startPoint);
+        const canvasEndPoint = mapPointToCamera(camOffset, drawing.endPoint);
+        drawLine(
+          ctx,
+          canvasStartPoint.x,
+          canvasStartPoint.y,
+          canvasEndPoint.x,
+          canvasEndPoint.y,
+          drawing.color,
+          drawing.strokeWidth
+        );
+        break;
+      case "path":
+        const canvasPoints = drawing.points.map((point) => mapPointToCamera(camOffset, point));
+        drawPath(ctx, canvasPoints, drawing.color, drawing.strokeWidth);
+        break;
+      case "text":
+        const canvasPoint = mapPointToCamera(camOffset, drawing.point);
+        drawText(
+          ctx,
+          canvasPoint.x,
+          canvasPoint.y,
+          drawing.text,
+          drawing.strokeStyle,
+          drawing.fillStyle,
+          drawing.lineWidth,
+          drawing.textAlign,
+          drawing.font
+        );
+        break;
 
-function addDrawExamples() {
-  // Example usage:
-  // Render circle at player
-  drawings.push({
-    type: "circle",
-    point: { x: dw.character.x, y: dw.character.y },
-    radius: 5,
-    color: "blue",
-  });
-  // Render rectangle at ai entities, rendering it for all makes the ui lag
-  drawings.push(
-    ...dw.entities
-      .filter((x) => x.ai)
-      .slice(0, 10)
-      .map<Rectangle>((entity) => ({
-        type: "rectangle",
-        point: { x: entity.x, y: entity.y },
-        width: 50,
-        height: 50,
-        color: "red",
-      }))
-  );
-  // draw a line below character
-  drawings.push({
-    type: "line",
-    startPoint: { x: dw.character.x - 10, y: dw.character.y - 10 },
-    endPoint: { x: dw.character.x + 10, y: dw.character.y - 10 },
-    color: "green",
-  });
-  // draw a path somewhere random
-  drawings.push({
-    type: "path",
-    points: [
-      { x: dw.character.x, y: dw.character.y },
-      { x: dw.character.x + 10, y: dw.character.y + 10 },
-      { x: dw.character.x + 20, y: dw.character.y + 20 },
-      { x: dw.character.x + 30, y: dw.character.y + 30 },
-    ],
-    color: "purple",
+      default:
+        // https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking
+        const _exhaustiveCheck: never = drawing;
+        return _exhaustiveCheck;
+    }
   });
 }
 
@@ -267,13 +260,37 @@ function drawPath(context: CanvasRenderingContext2D, points: Point[], color: str
   context.stroke();
 }
 
-// function drawText(context: CanvasRenderingContext2D) {
-//   context.font = "18px arial";
-//   context.textAlign = "center";
-//   const name = `${monster.md} ${monster.level}${"+".repeat(monster.r ?? 0)} ${Number(dist).toFixed(2)}`;
-//   context.strokeText(name, x, y - 8);
-//   context.fillText(name, x, y - 8);
-// }
+function drawText(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  text: string,
+  strokeStyle: string = "black",
+  fillStyle: string = "white",
+  lineWidth: number = 4,
+  textAlign: CanvasTextAlign = "center",
+  font = "18px arial"
+) {
+  context.strokeStyle = strokeStyle;
+  context.fillStyle = fillStyle;
+  context.lineWidth = lineWidth;
+
+  context.font = font;
+  context.textAlign = textAlign;
+
+  var lineHeight = context.measureText("M").width * 1.1;
+  const lines = text.split("\n");
+  // offset lines upwards compared to original positions.
+  y -= lineHeight * (lines.length - 1);
+  for (var i = 0; i < lines.length; ++i) {
+    context.strokeText(lines[i], x, y);
+    context.fillText(lines[i], x, y);
+    y += lineHeight;
+  }
+
+  // context.strokeText(text, x, y);
+  // context.fillText(text, x, y);
+}
 
 // function drawProgressBar() {
 //   ctx.fillStyle = `rgb(0, 0, 0, 0.5)`;

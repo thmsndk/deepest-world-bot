@@ -173,7 +173,7 @@ export function generateGrid(gridSize = 30, resolution = 0.5) {
         width: resolution * 96,
         height: resolution * 96,
         fillColor: getTileColor(tile),
-        fillAlpha: 0.4
+        fillAlpha: 0.25
       })),
   ];
   return grid;
