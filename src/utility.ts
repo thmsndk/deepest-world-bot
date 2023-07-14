@@ -64,7 +64,27 @@ export function moveToRandomValidPointNearCharacter(grid: GridArray) {
   const randomPoint = safestPoints[randomIndex];
 
   // Move to the random point, avoiding high-danger tiles
-  dw.move(randomPoint.x, randomPoint.y); // Assuming dw.move(x, y) moves the character
+  dw.move(randomPoint.x, randomPoint.y);
+}
+
+export function moveToClosestSafeSpot(grid: GridArray) {
+  // TODO: given dw.character with x and y properties construct a x by x grid of walkable tiles using dw.getTerrainAt({ x, y });
+  // TODO: if an entity is on a tile, give that tile a higher danger as well as tiles in a radius around it
+  // TODO: pick a random valid point with the lowest score and use dw.move(x,y) to move to that, making sure you don't cross tiles with high danger
+
+  // Find valid points with the lowest score
+  const lowestDanger = Math.min(...grid.map((tile) => tile.danger));
+  const safestPoints = grid.filter((tile) => tile.danger === lowestDanger);
+
+  // closest points ascending
+  safestPoints.sort((a, b) => dw.distance(dw.character, a) - dw.distance(dw.character, b));
+
+  const safestPoint = safestPoints.shift();
+
+  if (safestPoint) {
+    // Move to the point, avoiding high-danger tiles
+    dw.move(safestPoint.x, safestPoint.y);
+  }
 }
 
 export function generateGrid(gridSize = 30, resolution = 0.5) {
@@ -152,7 +172,8 @@ export function generateGrid(gridSize = 30, resolution = 0.5) {
         point: { x: tile.x, y: tile.y },
         width: resolution * 96,
         height: resolution * 96,
-        color: getTileColor(tile),
+        fillColor: getTileColor(tile),
+        fillAlpha: 0.4
       })),
   ];
   return grid;

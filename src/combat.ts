@@ -1,5 +1,5 @@
 import { Entity } from "./deepestworld";
-import { generateGrid, hasLineOfSight, moveToRandomValidPointNearCharacter } from "./utility";
+import { generateGrid, hasLineOfSight, moveToClosestSafeSpot, moveToRandomValidPointNearCharacter } from "./utility";
 
 export function attackAndRandomWalk(target: { distance: number; entity: Entity }) {
   if (!target) {
@@ -45,7 +45,7 @@ export function attackAndRandomWalk(target: { distance: number; entity: Entity }
 
   // TODO: should this be a subtask? grid should be a service or context we can access
   const grid = generateGrid();
-  moveToRandomValidPointNearCharacter(grid);
+  moveToClosestSafeSpot(grid);
 
   // TODO: determine best skill to attack with from skillbar, most dmg? resistances?
   if (dw.isSkillReady(skillToUse.md) && inAttackRange) {
