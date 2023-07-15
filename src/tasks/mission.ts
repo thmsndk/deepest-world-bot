@@ -2,8 +2,9 @@ import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
 import { merge, sacItems } from "../console";
 import { Entity } from "../deepestworld";
+import { drawingGroups } from "../draw";
 import { GridMatrix } from "../grid";
-import { sleep } from "../utility";
+import { hasLineOfSight, sleep } from "../utility";
 const TASK_NAME = "mission";
 
 export function mission(grid: GridMatrix): TaskTuple {
@@ -141,7 +142,7 @@ taskRegistry[TASK_NAME] = {
       }))
       .sort((a, b) => {
         // TODO: using threat makes it ping pong between targets
-        // // ascending by threat
+        // ascending by threat
         // if (Math.floor(a.threat) !== Math.floor(b.threat)) {
         //   return a.threat - b.threat;
         // }
@@ -153,6 +154,27 @@ taskRegistry[TASK_NAME] = {
     // console.log(closestEntity);
 
     const target = closestEntity[0];
+
+    if (!target) {
+      return TASK_STATE.DONE;
+    }
+
+    const los = hasLineOfSight(target.entity);
+
+    drawingGroups["targetPath"] = [
+      {
+        type: "circle",
+        point: { x: target.entity.x, y: target.entity.y },
+        radius: 0.25,
+        color: "#DA70D6",
+      },
+      {
+        type: "line",
+        startPoint: { x: dw.character.x, y: dw.character.y },
+        endPoint: { x: target.entity.x, y: target.entity.y },
+        color: !los ? "#F00" : "#00FF56",
+      },
+    ];
 
     // TODO: setting target in context would make things easier
     if (attackAndRandomWalk(grid, target) === 1) {

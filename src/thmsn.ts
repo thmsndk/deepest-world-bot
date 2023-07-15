@@ -8,7 +8,7 @@
  */
 
 import { registerConsoleCommands } from "./console";
-import { onDrawEnd } from "./draw";
+import { drawingGroups, onDrawEnd } from "./draw";
 import { drawNameplates } from "./draw-nameplates";
 import { GridMatrix, generateGrid } from "./grid";
 import { addTask, process } from "./tasks";
@@ -23,6 +23,8 @@ let grid: GridMatrix = [];
 async function run() {
   // Loop  state transitions that pushes a state onto the stack
   while (true) {
+    drawingGroups["move"] = [];
+    
     // TODO: start, join, abandon mission
     // TODO: Farm trees
     // TODO: Farm ore

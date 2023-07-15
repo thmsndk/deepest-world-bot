@@ -23,7 +23,7 @@ export interface Rectangle {
   point: Point;
   width: number;
   height: number;
-  color?: string;
+  color?: string; // TODO: rename to strokeColor or whatever the name is
   strokeWidth?: number;
   fillColor?: string;
   fillAlpha?: number;

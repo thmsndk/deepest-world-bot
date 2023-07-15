@@ -91,6 +91,17 @@ export function moveToClosestSafeSpot(grid: GridMatrix) {
   const safestPoint = safestPoints.shift();
 
   if (safestPoint) {
+    const resolution = 0.5;
+    drawingGroups["move"] = [
+      {
+        type: "rectangle",
+        point: safestPoint,
+        width: resolution * 96,
+        height: resolution * 96,
+        color: "#00FF56",
+        strokeWidth: 3
+      },
+    ];
     // Move to the point, avoiding high-danger tiles
     dw.move(safestPoint.x, safestPoint.y);
   } else {
