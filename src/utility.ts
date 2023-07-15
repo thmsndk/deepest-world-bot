@@ -52,16 +52,21 @@ export function getTerrainInStraightLine(p1: Point, p2: Point) {
 
 export function moveToClosestSafeSpot(grid: GridMatrix) {
   let lowestThreatScore: number | undefined = undefined;
-  let safestPoints: Array<{ x: number; y: number }> = [];
-  for (let y = 0; y < grid.length; y++) {
-    const columns = grid[y];
+  let safestPoints: Array<{ x: number; y: number; distance: number }> = [];
+  for (const row in grid) {
+    const y = Number(row);
+    const columns = grid[row];
     if (!columns) continue;
-    for (let x = 0; x < columns?.length; x++) {
-      const tile = columns[x];
+    for (const column in columns) {
+      const x = Number(column);
+      const tile = columns[column];
 
       if (!tile) continue;
 
-      if (tile.threat <= 0) continue;
+      if (tile.threat === Infinity) continue;
+
+      const distance = dw.distance(dw.character, { x, y });
+      if (distance > 5) continue;
 
       const los = hasLineOfSight({ l: dw.character.l, x, y });
       if (!los) continue;
@@ -70,18 +75,18 @@ export function moveToClosestSafeSpot(grid: GridMatrix) {
         // clear previous safe spots
         safestPoints = [];
         lowestThreatScore = tile.threat;
-        console.log("new lowest threat found", lowestThreatScore, [x, y]);
+        // console.log("new lowest threat found", lowestThreatScore, [x, y]);
       }
 
       if (tile.threat === lowestThreatScore) {
         console.log("adding low threat point", [x, y]);
-        safestPoints.push({ x, y });
+        safestPoints.push({ x, y, distance });
       }
     }
   }
 
   // closest points ascending
-  safestPoints.sort((a, b) => dw.distance(dw.character, a) - dw.distance(dw.character, b));
+  safestPoints.sort((a, b) => a.distance - b.distance);
 
   const safestPoint = safestPoints.shift();
 

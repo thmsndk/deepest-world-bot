@@ -7,7 +7,7 @@ export type GridMatrix = Array<
   }>
 >;
 
-export function generateGrid(gridSize = 30, resolution = 0.5) {
+export function generateGrid(gridSize = 50, resolution = 0.5) {
   gridSize = gridSize * resolution;
   // Calculate the center of the grid
   const centerX = dw.character.x - Math.floor(gridSize / 2);
@@ -40,17 +40,28 @@ export function generateGrid(gridSize = 30, resolution = 0.5) {
     }
   }
 
+  drawGrid(grid, resolution);
+  // console.debug("generateGrid", grid);
+  // console.table(grid);
+  return grid;
+}
+
+function drawGrid(grid: GridMatrix, resolution: number) {
   drawingGroups["dangerGrid"] = [];
 
-  for (let y = 0; y < grid.length; y += resolution) {
-    const columns = grid[y];
+  for (const row in grid) {
+    const y = Number(row);
+    const columns = grid[row];
     if (!columns) continue;
-    for (let x = 0; x < columns?.length; x += resolution) {
-      const tile = columns[x];
+    for (const column in columns) {
+      const x = Number(column);
+      const tile = columns[column];
 
       if (!tile) continue;
 
-      if (tile.threat <= 0) continue;
+      //   if (tile.threat <= 0) continue;
+
+      if (tile.threat <= 8) continue;
 
       drawingGroups["dangerGrid"].push({
         type: "rectangle",
@@ -59,8 +70,6 @@ export function generateGrid(gridSize = 30, resolution = 0.5) {
         height: resolution * 96,
         // fillColor: getInterpolatedColor(tile.threat),
         fillColor: getColorByTreshhold(tile.threat),
-
-        fillAlpha: 0.25,
       });
       drawingGroups["dangerGrid"].push({
         type: "text",
@@ -71,9 +80,6 @@ export function generateGrid(gridSize = 30, resolution = 0.5) {
       });
     }
   }
-  //   console.debug("generateGrid");
-  //   console.table(grid);
-  return grid;
 }
 
 function snapToGrid(x: number, y: number, resolution = 0.5) {
@@ -129,6 +135,7 @@ interface Color {
   r: number;
   g: number;
   b: number;
+  a: number;
 }
 
 export type GetColorConfig = {
@@ -141,9 +148,9 @@ function getColorByTreshhold(
   config: GetColorConfig = {
     thresholds: [0, 10, 20],
     colors: [
-      { r: 255, g: 255, b: 255 }, // White
-      { r: 255, g: 255, b: 0 }, // Yellow
-      { r: 255, g: 0, b: 0 }, // Red
+      { r: 255, g: 255, b: 255, a: 0.15 }, // White
+      { r: 255, g: 255, b: 0, a: 0.4 }, // Yellow
+      { r: 255, g: 0, b: 0, a: 0.4 }, // Red
     ],
   }
 ) {
@@ -158,11 +165,12 @@ function getColorByTreshhold(
 
   // Get the colors for the current range
   const startColor = colors[rangeIndex];
+  const { r, g, b, a } = startColor;
 
-  // Convert the interpolated color to a hex string
-  const hexColor = rgbToHex(startColor.r, startColor.g, startColor.b);
+  //   const hexColor = rgbToHex(startColor.r, startColor.g, startColor.b);
 
-  return hexColor;
+  //   return hexColor;
+  return `rgb(${r}, ${g}, ${b}, ${a})`;
 }
 
 function getInterpolatedColor(
@@ -170,9 +178,9 @@ function getInterpolatedColor(
   config: GetColorConfig = {
     thresholds: [0, 50, 100],
     colors: [
-      { r: 255, g: 255, b: 255 }, // White
-      { r: 255, g: 255, b: 0 }, // Yellow
-      { r: 255, g: 0, b: 0 }, // Red
+      { r: 255, g: 255, b: 255, a: 0.15 }, // White
+      { r: 255, g: 255, b: 0, a: 0.5 }, // Yellow
+      { r: 255, g: 0, b: 0, a: 0.5 }, // Red
     ],
   }
 ) {

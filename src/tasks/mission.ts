@@ -1,6 +1,7 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
 import { merge, sacItems } from "../console";
+import { Entity } from "../deepestworld";
 import { GridMatrix } from "../grid";
 import { sleep } from "../utility";
 const TASK_NAME = "mission";
@@ -119,14 +120,37 @@ taskRegistry[TASK_NAME] = {
       }
     }
 
+    const getThreat = (entity: Entity): number => {
+      const row = grid[Math.floor(entity.y)];
+      if (row) {
+        const tile = row[Math.floor(entity.x)];
+        if (tile) {
+          return tile.threat;
+        }
+      }
+      return 0;
+    };
+
     // TODO: mission logic, monster missions is just killing missions
     const closestEntity = dw.entities
       .filter((entity) => entity.l === dw.character.l && entity.ai && entity.r < 2)
       .map((entity) => ({
         entity,
         distance: dw.distance(dw.character, entity),
+        threat: getThreat(entity),
       }))
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => {
+        // TODO: using threat makes it ping pong between targets
+        // // ascending by threat
+        // if (Math.floor(a.threat) !== Math.floor(b.threat)) {
+        //   return a.threat - b.threat;
+        // }
+
+        // ascending by distance
+        return a.distance - b.distance;
+      });
+
+    // console.log(closestEntity);
 
     const target = closestEntity[0];
 
