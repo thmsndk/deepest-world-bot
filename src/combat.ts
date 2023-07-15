@@ -40,6 +40,7 @@ export function attackAndRandomWalk(grid:GridMatrix, target: { distance: number;
 
   const inAttackRange = target.distance <= skillToUse.range;
   if (!inAttackRange) {
+    // TODO: pick a safe spot towards the target
     dw.move(target.entity.x, target.entity.y);
     return 1;
   }

@@ -15,7 +15,7 @@ taskRegistry[TASK_NAME] = {
   run: async (grid: GridMatrix) => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
     const missionTables = dw.entities.filter(
-      (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionTable"
+      (entity) => entity.owner && entity.md === "missionTable"
     );
 
     // TODO We could store  "last mission" and detect if dw.character.mission is no longer the same
@@ -26,18 +26,47 @@ taskRegistry[TASK_NAME] = {
       // TODO: What if we don't have enoug bagspace to open it?
       merge("wood", "rock", "ironOre", "skillOrb");
 
+      // tp home for free
+      dw.emit("unstuck");
+
+      await sleep(2000);
+
+      await sacItems();
+
+      await sleep(2000);
+
       dw.emit("openItem", { i: missionBagIndex });
 
       dw.emit("sortInv");
 
-      // tp home for free
-      dw.emit("unstuck");
+      // attempt to enchant missions
+      const missionsInBag = dw.character.bag
+        .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
+        .filter(
+          (x) =>
+            x.item &&
+            x.item.md.endsWith("Mission") &&
+            x.item.qual >= dw.character.level - 2 && // only auto enchant 2 less than your level
+            // x.item.r < 3 &&
+            !x.item.n
+        );
+      const altar = dw.entities.find((entity) => entity && entity.md === "enchantingDevice1" && entity.owner);
 
-      await sleep(5000);
-
-      await sacItems();
-
-      await sleep(5000);
+      if (altar) {
+        for (const mission of missionsInBag) {
+          // Move mission from bag to altar
+          dw.moveItem("bag", mission.bagIndex, "storage", 0, undefined, altar.id);
+          await sleep(500);
+          // TODO: detect materials and bail out when it can't be enchanted
+          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+          await sleep(500);
+          // Move enchanted mission from altar to bag
+          dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);
+        }
+      }
     }
 
     if (missionTables.length > 0) {
@@ -73,8 +102,8 @@ taskRegistry[TASK_NAME] = {
               return b.item.r - a.item.r;
             }
 
-            // sort by level ASC, prefering low lvl missions
-            return a.item.qual - b.item.qual;
+            // sort by level DESC, prefering high lvl missions
+            return b.item.qual - a.item.qual;
           });
 
         // populate missionboard

@@ -43,7 +43,12 @@ export async function sacItems(level?: number, maxRarity = 2) {
     return;
   }
 
-  // TODO: move in range of altar?
+  // keep things that has a lot of mods with *Dmg with large values
+  // moveSpeed mod is important
+  // mpInc is a % mana increase
+  // mpRegen is mana regen %
+
+
 
   dw.character.bag
     .map((b, bIndex) => ({ item: b, bIndex: bIndex }))

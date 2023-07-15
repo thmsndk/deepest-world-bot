@@ -283,6 +283,8 @@ type DefaultSkill = {
 };
 
 export type Entity = BaseEntity & {
+  owner: boolean;
+
   ownerDbId: number;
 
   level: number;
