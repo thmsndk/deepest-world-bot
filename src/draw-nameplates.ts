@@ -73,7 +73,7 @@ export function drawNameplates() {
     const skulls = monster.r > 0 ? `\n${"💀".repeat(monster.r ?? 0)}` : "";
     let color = "white";
     if (monster.hostile) {
-      color = "#B65B5B";
+      color = "orange";
     }
     if (monster.targetId === dw.character.id) {
       color = "red";

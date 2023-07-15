@@ -2,16 +2,17 @@ import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
 import { Entity } from "../deepestworld";
 import { drawingGroups } from "../draw";
-import { generateGrid, hasLineOfSight, moveToRandomValidPointNearCharacter } from "../utility";
+import { GridMatrix } from "../grid";
+import { hasLineOfSight } from "../utility";
 const TASK_NAME = "defend-self";
 
-export function defendSelf(): TaskTuple {
-  return [TASK_NAME];
+export function defendSelf(grid: GridMatrix): TaskTuple {
+  return [TASK_NAME, grid];
 }
 
 let target: { distance: number; entity: Entity } | undefined = undefined;
 taskRegistry[TASK_NAME] = {
-  run: async () => {
+  run: async (grid: GridMatrix) => {
     drawingGroups["targetPath"] = [];
     // TODO: in range to attack target? then do so.
     // Not in range? pick the lowest health in range as a temp target
@@ -67,7 +68,7 @@ taskRegistry[TASK_NAME] = {
     // TODO: if we have no line of sight, find a path? drunkenWalk?
     // should it return a subtask to be run? and then return to this task?
 
-    if (attackAndRandomWalk(target) === -1) {
+    if (attackAndRandomWalk(grid, target) === -1) {
       return TASK_STATE.DONE;
     }
 

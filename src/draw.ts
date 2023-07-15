@@ -278,7 +278,7 @@ function drawText(
   context.font = font;
   context.textAlign = textAlign;
 
-  var lineHeight = context.measureText("M").width * 1.1;
+  var lineHeight = context.measureText("M").width * 1.2;
   const lines = text.split("\n");
   // offset lines upwards compared to original positions.
   y -= lineHeight * (lines.length - 1);

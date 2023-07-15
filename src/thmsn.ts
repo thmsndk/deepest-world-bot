@@ -10,6 +10,7 @@
 import { registerConsoleCommands } from "./console";
 import { onDrawEnd } from "./draw";
 import { drawNameplates } from "./draw-nameplates";
+import { GridMatrix, generateGrid } from "./grid";
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
 import { explore } from "./tasks/exploration";
@@ -18,7 +19,7 @@ import { mission } from "./tasks/mission";
 import { sleep } from "./utility";
 
 dw.debug = 1;
-
+let grid: GridMatrix = [];
 async function run() {
   // Loop  state transitions that pushes a state onto the stack
   while (true) {
@@ -32,9 +33,9 @@ async function run() {
 
     addTask(explore());
 
-    addTask(mission());
+    addTask(mission(grid));
 
-    addTask(defendSelf());
+    addTask(defendSelf(grid));
 
     // TODO: inventory full => 3 tasks goToSpawn,depositItems,returnToPosition
 
@@ -59,6 +60,14 @@ setInterval(() => {
   drawNameplates();
 }, 250);
 
+setInterval(() => {
+  try {
+    grid = generateGrid();
+  } catch (error) {
+    console.error("failed generating grid", error);
+  }
+}, 250);
+
 // todo: use hit event instead
 dw.on("diff", (data) => {
   // TODO: unsure about diff structure
@@ -71,4 +80,3 @@ dw.on("diff", (data) => {
     // addTask(selfDeath());
   }
 });
-

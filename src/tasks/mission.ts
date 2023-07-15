@@ -1,15 +1,16 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
 import { merge, sacItems } from "../console";
+import { GridMatrix } from "../grid";
 import { sleep } from "../utility";
 const TASK_NAME = "mission";
 
-export function mission(): TaskTuple {
-  return [TASK_NAME];
+export function mission(grid: GridMatrix): TaskTuple {
+  return [TASK_NAME, grid];
 }
 
 taskRegistry[TASK_NAME] = {
-  run: async () => {
+  run: async (grid: GridMatrix) => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
     const missionTables = dw.entities.filter(
       (entity) => entity.ownerDbId === dw.character.dbId && entity.md === "missionTable"
@@ -130,7 +131,7 @@ taskRegistry[TASK_NAME] = {
     const target = closestEntity[0];
 
     // TODO: setting target in context would make things easier
-    if (attackAndRandomWalk(target) === 1) {
+    if (attackAndRandomWalk(grid, target) === 1) {
       return TASK_STATE.EVALUATE_NEXT_TICK; // To prevent exploration task overriding our movement.
     }
 
