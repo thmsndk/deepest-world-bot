@@ -61,7 +61,7 @@ export const MAP_SCALE = 96;
 // Drawing groups lets you clear the groups in another loop thus gaining control over when it resets
 export const drawingGroups: { [key: string]: Drawing[] } = {};
 // Define the drawings collection
-let drawings: Drawing[] = [];
+// let drawings: Drawing[] = [];
 export function onDrawEnd() {
   // Event handler for the "drawEnd" event
   dw.on("drawEnd", (ctx, cx, cy) => {
@@ -76,12 +76,17 @@ export function onDrawEnd() {
       y: Math.round(cy * MAP_SCALE - Math.floor(ctx.canvas.height / 2)),
     };
 
-    for (const key in drawingGroups) {
-      drawStuff(ctx, camOffset, drawingGroups[key]);
+    const sortedGroups = Object.entries(drawingGroups).sort(([aKey, aValue], [bKey, bValue]) =>
+      aKey.localeCompare(bKey)
+    );
+
+    for (const [key, drawings] of sortedGroups) {
+      drawStuff(ctx, camOffset, drawings);
     }
-    drawStuff(ctx, camOffset, drawings);
+
+    // drawStuff(ctx, camOffset, drawings);
     // Clear drawings for next render cycle
-    drawings = [];
+    // drawings = [];
     // addDrawExamples();
   });
 }

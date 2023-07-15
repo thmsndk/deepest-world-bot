@@ -1,9 +1,10 @@
 import { drawingGroups } from "./draw";
 
+const DRAW_NAMEPLATES ="z100-nameplates";
 export function drawNameplates() {
   const monsters = dw.entities.filter((e) => e.ai);
 
-  drawingGroups["nameplates"] = [];
+  drawingGroups[DRAW_NAMEPLATES] = [];
 
   for (let monster of monsters) {
     // let text = ctx.measureText(monster.md);
@@ -18,7 +19,7 @@ export function drawNameplates() {
     const height = 8;
 
     // Render a black background with 0.5 alpha
-    drawingGroups["nameplates"].push({
+    drawingGroups[DRAW_NAMEPLATES].push({
       type: "rectangle",
       point: { x, y },
       width: width,
@@ -35,7 +36,7 @@ export function drawNameplates() {
     const healthPercentage = monster.hp / monster.hpMax;
     const healthWidth = width * healthPercentage;
     const healthbarOffsetX = (width - healthWidth) / width / 2;
-    drawingGroups["nameplates"].push({
+    drawingGroups[DRAW_NAMEPLATES].push({
       type: "rectangle",
       // move healthbar to the left
       point: { x: x - healthbarOffsetX, y },
@@ -79,7 +80,7 @@ export function drawNameplates() {
       color = "red";
     }
 
-    drawingGroups["nameplates"].push({
+    drawingGroups[DRAW_NAMEPLATES].push({
       type: "text",
       point: { x, y: y - 0.3 },
       text: `📏${Number(dist).toFixed(2)}${skulls}\n${monster.md} ${monster.level}`,
@@ -87,7 +88,7 @@ export function drawNameplates() {
     });
 
     // Render current health on healthbar
-    drawingGroups["nameplates"].push({
+    drawingGroups[DRAW_NAMEPLATES].push({
       type: "text",
       point: { x, y: y },
       text: `${monster.hp} / ${monster.hpMax}`,
