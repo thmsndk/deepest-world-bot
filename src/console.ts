@@ -1,4 +1,5 @@
 import { Item } from "./deepestworld";
+import { calculateItemScore, sacItems } from "./disenchant";
 import { sleep } from "./utility";
 
 declare global {
@@ -7,6 +8,7 @@ declare global {
     setSpawn: () => void;
     sacItems: () => void;
     merge: () => void;
+    scoreBag: () => void;
   }
 }
 
@@ -16,6 +18,18 @@ export function registerConsoleCommands() {
   top!.setSpawn = setSpawn;
   top!.sacItems = sacItems;
   top!.merge = merge;
+
+  top!.scoreBag = () => {
+    const bagScores = dw.character.bag
+      .map((bagItem, bIndex) => {
+        // TODO: certain things gives an item a higher score, if we score the item too low, we sacrifice it
+        const score = bagItem ? calculateItemScore(bagItem) : 0;
+
+        return { item: bagItem, bIndex: bIndex, score };
+      })
+      .filter((x) => x.item);
+    console.log("bagScores", bagScores);
+  };
 }
 // go to spawn
 function goHome() {
@@ -28,47 +42,6 @@ function setSpawn() {
   spawns.push(dw.character.spawn);
   dw.emit("setSpawn");
   dw.set("spawns", spawns);
-}
-
-// TODO: ability to not sac specific types if items, with certain enchants.
-export async function sacItems(level?: number, maxRarity = 2) {
-  const maxLevel = level ?? dw.character.level - 1;
-
-  const altar = dw.entities.find(
-    (entity) => entity && entity.md === "enchantingDevice1" && entity.ownerDbId === dw.character.dbId
-  );
-
-  if (!altar) {
-    console.warn("No altar nearby.");
-    return;
-  }
-
-  // keep things that has a lot of mods with *Dmg with large values
-  // moveSpeed mod is important
-  // mpInc is a % mana increase
-  // mpRegen is mana regen %
-
-
-
-  dw.character.bag
-    .map((b, bIndex) => ({ item: b, bIndex: bIndex }))
-    .filter(
-      (x) => x.item && x.item.qual <= maxLevel && x.item.r <= maxRarity && !x.item.n && x.item.md !== "monsterMission"
-    )
-    .forEach(async (x) => {
-      if (altar) {
-        const inSacRange = dw.distance(dw.c, altar) < 2;
-
-        if (!inSacRange) {
-          console.log("out of range for sac, moving to ", altar);
-          dw.move(altar.x, altar.y - 0.5);
-          await sleep(5000);
-        }
-
-        console.log("sacItem", { id: altar.id, i: x.bIndex });
-        dw.emit("sacItem", { id: altar.id, i: x.bIndex });
-      }
-    });
 }
 
 export function merge(...itemNames: string[]) {

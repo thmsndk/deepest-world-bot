@@ -240,7 +240,7 @@ type Character = BaseEntity & {
     timeoutAt: number;
   };
 
-  bag: readonly Array<Item>;
+  bag: readonly Array<Item | undefined>;
 
   craftIn: readonly Array<Item>;
 };
@@ -331,10 +331,10 @@ export type Entity = BaseEntity & {
 
   hostile: boolean;
 
-    /** Entity current health */
-    hp: number;
-    /** Entity maximum health */
-    hpMax: number;
+  /** Entity current health */
+  hp: number;
+  /** Entity maximum health */
+  hpMax: number;
 };
 
 type Entities = Array<Entity>;

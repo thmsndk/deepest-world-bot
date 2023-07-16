@@ -1,7 +1,8 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
-import { merge, sacItems } from "../console";
+import { merge } from "../console";
 import { Entity } from "../deepestworld";
+import { sacItems } from "../disenchant";
 import { drawingGroups } from "../draw";
 import { GridMatrix } from "../grid";
 import { hasLineOfSight, sleep } from "../utility";
@@ -14,9 +15,7 @@ export function mission(grid: GridMatrix): TaskTuple {
 taskRegistry[TASK_NAME] = {
   run: async (grid: GridMatrix) => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
-    const missionTables = dw.entities.filter(
-      (entity) => entity.owner && entity.md === "missionTable"
-    );
+    const missionTables = dw.entities.filter((entity) => entity.owner && entity.md === "missionTable");
 
     // TODO We could store  "last mission" and detect if dw.character.mission is no longer the same
     // if we have a mission bag, we probably just completed a mission
@@ -47,13 +46,15 @@ taskRegistry[TASK_NAME] = {
             x.item &&
             x.item.md.endsWith("Mission") &&
             x.item.qual >= dw.character.level - 2 && // only auto enchant 2 less than your level
-            // x.item.r < 3 &&
             !x.item.n
         );
       const altar = dw.entities.find((entity) => entity && entity.md === "enchantingDevice1" && entity.owner);
 
       if (altar) {
         for (const mission of missionsInBag) {
+          // Move from altar to bag, in case something is already in there
+          dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);
+
           // Move mission from bag to altar
           dw.moveItem("bag", mission.bagIndex, "storage", 0, undefined, altar.id);
           await sleep(500);
@@ -86,29 +87,29 @@ taskRegistry[TASK_NAME] = {
         const board = missionTables[0];
         const boardInRange = dw.distance(dw.character, board) <= 2;
 
-        const missionsInBag = dw.character.bag
-          .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
-          .filter(
-            (x) =>
-              x.item &&
-              x.item.md.endsWith("Mission") &&
-              x.item.qual < dw.character.level + 1 && // only auto add up to lvl 7 missions
-              // x.item.r < 3 &&
-              !x.item.n
-          )
-          .sort((a, b) => {
-            if (a.item.r !== b.item.r) {
-              // sort by rarity DESC
-              return b.item.r - a.item.r;
-            }
+        const missionsInBag = [];
 
-            // sort by level DESC, prefering high lvl missions
-            return b.item.qual - a.item.qual;
-          });
+        for (let index = 0; index < dw.character.bag.length; index++) {
+          const item = dw.character.bag[index];
+          if (!item) continue;
+          if (!item.md.endsWith("Mission")) continue;
+          // only auto add up to +1 char level
+          if (item.qual > dw.character.level + 1) continue;
+          missionsInBag.push({ item, bagIndex: index });
+        }
+
+        missionsInBag.sort((a, b) => {
+          if (a.item.r !== b.item.r) {
+            // sort by rarity DESC
+            return b.item.r - a.item.r;
+          }
+
+          // sort by level DESC, prefering high lvl missions
+          return b.item.qual - a.item.qual;
+        });
 
         // populate missionboard
         if (missionsInBag.length > 0) {
-          // TODO: prioririze enchanted missions
           const boardHasMissions = board.storage.some((s) => s);
 
           // Only fill up board when it is empty, that way we run all missions
