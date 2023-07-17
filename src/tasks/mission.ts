@@ -1,15 +1,28 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { attackAndRandomWalk } from "../combat";
+import { config } from "../config";
 import { merge } from "../console";
 import { Entity } from "../deepestworld";
 import { sacItems } from "../disenchant";
-import { drawingGroups } from "../draw";
 import { GridMatrix } from "../grid";
-import { hasLineOfSight, sleep, getWalkablePathInStraightLine } from "../utility";
+import { hasLineOfSight, sleep } from "../utility";
 const TASK_NAME = "mission";
 
 export function mission(grid: GridMatrix): TaskTuple {
   return [TASK_NAME, grid];
+}
+
+// Initialize config
+if (config.mission_auto_add === undefined) {
+  config.mission_auto_add = true;
+}
+
+if (config.mission_auto_accept === undefined) {
+  config.mission_auto_accept = true;
+}
+
+if (config.mission_auto_enchant === undefined) {
+  config.mission_auto_enchant = true;
 }
 
 taskRegistry[TASK_NAME] = {
@@ -40,33 +53,36 @@ taskRegistry[TASK_NAME] = {
       await sleep(1000);
 
       // attempt to enchant missions
-      const missionsInBag = dw.character.bag
-        .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
-        .filter(
-          (x) =>
-            x.item &&
-            x.item.md.endsWith("Mission") &&
-            x.item.qual >= dw.character.level - 2 && // only auto enchant 2 less than your level
-            !x.item.n
-        );
-      const altar = dw.entities.find((entity) => entity && entity.md === "enchantingDevice1" && entity.owner);
+      if (config.mission_auto_enchant) {
+        const missionsInBag = dw.character.bag
+          .map((b, bagIndex) => ({ item: b, bagIndex: bagIndex }))
+          .filter(
+            (x) =>
+              x.item &&
+              x.item.md.endsWith("Mission") &&
+              x.item.qual >= dw.character.level - 2 && // only auto enchant 2 less than your level
+              !x.item.n
+          );
+        const altar = dw.entities.find((entity) => entity && entity.md === "enchantingDevice1" && entity.owner);
 
-      if (altar) {
-        for (const mission of missionsInBag) {
-          // Move from altar to bag, in case something is already in there
-          dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);
+        if (altar) {
+          // TODO: only enchant one mission? to not waste enchants? or make sure we pick the mission with the highest reward?
+          for (const mission of missionsInBag) {
+            // Move from altar to bag, in case something is already in there
+            dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);
 
-          // Move mission from bag to altar
-          dw.moveItem("bag", mission.bagIndex, "storage", 0, undefined, altar.id);
-          await sleep(500);
-          // TODO: detect materials and bail out when it can't be enchanted
-          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-          dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-          await sleep(500);
-          // Move enchanted mission from altar to bag
-          dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);
+            // Move mission from bag to altar
+            dw.moveItem("bag", mission.bagIndex, "storage", 0, undefined, altar.id);
+            await sleep(500);
+            // TODO: detect materials and bail out when it can't be enchanted
+            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            await sleep(500);
+            // Move enchanted mission from altar to bag
+            dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);
+          }
         }
       }
     }
@@ -111,7 +127,7 @@ taskRegistry[TASK_NAME] = {
         });
 
         // populate missionboard
-        if (missionsInBag.length > 0) {
+        if (missionsInBag.length > 0 && config.mission_auto_add) {
           const boardHasMissions = board.storage.some((s) => s);
 
           // Only fill up board when it is empty, that way we run all missions
@@ -137,17 +153,18 @@ taskRegistry[TASK_NAME] = {
         }
 
         // accept mission
-        for (let index = 0; index < board.storage.length; index++) {
-          const mission = board.storage[index];
-          if (mission) {
-            if (!boardInRange) {
-              dw.move(board.x, board.y);
-              return TASK_STATE.EVALUATE_NEXT_TICK;
-            } else {
-              dw.acceptMission(board.id, index);
-              return TASK_STATE.EVALUATE_NEXT_TICK;
+        if (config.mission_auto_accept) {
+          for (let index = 0; index < board.storage.length; index++) {
+            const mission = board.storage[index];
+            if (mission) {
+              if (!boardInRange) {
+                dw.move(board.x, board.y);
+                return TASK_STATE.EVALUATE_NEXT_TICK;
+              } else {
+                dw.acceptMission(board.id, index);
+                return TASK_STATE.EVALUATE_NEXT_TICK;
+              }
             }
-            break;
           }
         }
       }
@@ -164,6 +181,7 @@ taskRegistry[TASK_NAME] = {
       return 0;
     };
 
+    // skull 50% increase dmg and 100% increased life per skull
     // TODO: mission logic, monster missions is just killing missions
     const closestEntity = dw.entities
       .filter((entity) => entity.l === dw.character.l && entity.ai && entity.r < 2)
@@ -171,7 +189,7 @@ taskRegistry[TASK_NAME] = {
         entity,
         distance: dw.distance(dw.character, entity),
         threat: getThreat(entity),
-        los:  hasLineOfSight(entity, true) ? true : false,
+        los: hasLineOfSight(entity, true) ? true : false,
       }))
       .sort((a, b) => {
         if (a.los !== b.los) {

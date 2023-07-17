@@ -1,3 +1,4 @@
+import { Config, config } from "./config";
 import { Item } from "./deepestworld";
 import { calculateItemScore, sacItems } from "./disenchant";
 import { sleep } from "./utility";
@@ -9,10 +10,12 @@ declare global {
     sacItems: () => void;
     merge: () => void;
     scoreBag: () => void;
+    config: Config;
   }
 }
 
 export function registerConsoleCommands() {
+  top!.config = config;
   // Add to console as our character runs in an iframe
   top!.goHome = goHome;
   top!.setSpawn = setSpawn;
