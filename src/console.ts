@@ -27,7 +27,8 @@ export function registerConsoleCommands() {
 
         return { item: bagItem, bIndex: bIndex, score };
       })
-      .filter((x) => x.item);
+      .filter((x) => x.item)
+      .sort((a, b) => a.score - b.score);
     console.log("bagScores", bagScores);
   };
 }

@@ -1,15 +1,18 @@
 import { Entity } from "./deepestworld";
+import { drawingGroups } from "./draw";
 import { GridMatrix } from "./grid";
-import { hasLineOfSight, moveToClosestSafeSpot } from "./utility";
+import { hasLineOfSight, moveToClosestSafeSpot, getWalkablePathInStraightLine } from "./utility";
 
-export function attackAndRandomWalk(grid:GridMatrix, target: { distance: number; entity: Entity }) {
+export function attackAndRandomWalk(grid: GridMatrix, target: { distance: number; entity: Entity }) {
   if (!target) {
     return true;
   }
 
-  const los = hasLineOfSight(target.entity);
+  const los = hasLineOfSight(target.entity, true);
+  
+
   if (!los) {
-    console.log("no line of sight");
+    console.log("no line of sight", los);
     return -1;
   }
 

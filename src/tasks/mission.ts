@@ -5,7 +5,7 @@ import { Entity } from "../deepestworld";
 import { sacItems } from "../disenchant";
 import { drawingGroups } from "../draw";
 import { GridMatrix } from "../grid";
-import { hasLineOfSight, sleep } from "../utility";
+import { hasLineOfSight, sleep, getWalkablePathInStraightLine } from "../utility";
 const TASK_NAME = "mission";
 
 export function mission(grid: GridMatrix): TaskTuple {
@@ -37,6 +37,7 @@ taskRegistry[TASK_NAME] = {
       dw.emit("openItem", { i: missionBagIndex });
 
       dw.emit("sortInv");
+      await sleep(1000);
 
       // attempt to enchant missions
       const missionsInBag = dw.character.bag
@@ -81,6 +82,7 @@ taskRegistry[TASK_NAME] = {
         } else {
           dw.enterMission();
           // TODO: floodfill to detect if we are stuck and abandon
+          await sleep(2000);
           return TASK_STATE.EVALUATE_NEXT_TICK;
         }
       } else {
@@ -169,8 +171,13 @@ taskRegistry[TASK_NAME] = {
         entity,
         distance: dw.distance(dw.character, entity),
         threat: getThreat(entity),
+        los:  hasLineOfSight(entity, true) ? true : false,
       }))
       .sort((a, b) => {
+        if (a.los !== b.los) {
+          // los true before los false
+          return Number(b.los) - Number(a.los);
+        }
         // TODO: using threat makes it ping pong between targets
         // ascending by threat
         // if (Math.floor(a.threat) !== Math.floor(b.threat)) {
@@ -188,23 +195,6 @@ taskRegistry[TASK_NAME] = {
     if (!target) {
       return TASK_STATE.DONE;
     }
-
-    const los = hasLineOfSight(target.entity);
-
-    drawingGroups["targetPath"] = [
-      {
-        type: "circle",
-        point: { x: target.entity.x, y: target.entity.y },
-        radius: 0.25,
-        color: "#DA70D6",
-      },
-      {
-        type: "line",
-        startPoint: { x: dw.character.x, y: dw.character.y },
-        endPoint: { x: target.entity.x, y: target.entity.y },
-        color: !los ? "#F00" : "#00FF56",
-      },
-    ];
 
     // TODO: setting target in context would make things easier
     if (attackAndRandomWalk(grid, target) === 1) {

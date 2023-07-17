@@ -13,7 +13,6 @@ export function defendSelf(grid: GridMatrix): TaskTuple {
 let target: { distance: number; entity: Entity } | undefined = undefined;
 taskRegistry[TASK_NAME] = {
   run: async (grid: GridMatrix) => {
-    drawingGroups["targetPath"] = [];
     // TODO: in range to attack target? then do so.
     // Not in range? pick the lowest health in range as a temp target
 
@@ -32,34 +31,9 @@ taskRegistry[TASK_NAME] = {
     target = targetingMe[0];
     // TODO stickyTarget
 
-    const los = hasLineOfSight(target.entity);
+    const los = hasLineOfSight(target.entity, true);
 
-    drawingGroups["targetPath"] = [
-      // {
-      //   type: "path",
-      //   points: path,
-      //   color: "#DA70D6",
-      // },
-      {
-        type: "circle",
-        point: { x: target.entity.x, y: target.entity.y },
-        radius: 0.25,
-        color: "#DA70D6",
-      },
-      {
-        type: "line",
-        startPoint: { x: dw.character.x, y: dw.character.y },
-        endPoint: { x: target.entity.x, y: target.entity.y },
-        color: !los ? "#F00" : "#00FF56",
-      },
-      // ...neigbors.map((tile) => ({
-      //   type: "rectangle",
-      //   point: { x: tile.x, y: tile.y },
-      //   width: 0.5 * 96,
-      //   height: 0.5 * 96,
-      //   color: "#354acc",
-      // })),
-    ];
+    
 
     if (!los) {
       return TASK_STATE.DONE;

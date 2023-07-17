@@ -24,7 +24,8 @@ async function run() {
   // Loop  state transitions that pushes a state onto the stack
   while (true) {
     drawingGroups["move"] = [];
-    
+    drawingGroups["targetPath"] = [];
+
     // TODO: start, join, abandon mission
     // TODO: Farm trees
     // TODO: Farm ore

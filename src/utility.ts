@@ -11,9 +11,12 @@ interface Point {
   y: number;
 }
 
-export function hasLineOfSight(target: Point) {
-  const straightPath = getTerrainInStraightLine(dw.character, target);
-  return !straightPath.some((x) => x > 0 /* Air / Walkable */);
+export function hasLineOfSight(target: Point, renderPath = false) {
+  // const straightPath = getTerrainInStraightLine(dw.character, target);
+
+  // return !straightPath.some((x) => x > 0 /* Air / Walkable */);
+
+  return getWalkablePathInStraightLine(dw.character, target, renderPath);
 }
 
 export function getTerrainInStraightLine(p1: Point, p2: Point) {
@@ -50,6 +53,167 @@ export function getTerrainInStraightLine(p1: Point, p2: Point) {
   return terrainArray;
 }
 
+export function getWalkablePathInStraightLine(p1: Point, p2: Point, renderPath = false) {
+  // horizontal distance between the points.
+  const dx = p2.x - p1.x;
+  // vertical distance between the points.
+  const dy = p2.y - p1.y;
+  const adx = Math.abs(dx);
+  const ady = Math.abs(dy);
+  const signX = dx === 0 ? 0 : dx > 0 ? 1 : -1;
+  const signY = dy === 0 ? 0 : dy > 0 ? 1 : -1;
+
+  let x = p1.x;
+  let y = p1.y;
+  const path: Point[] = [p1];
+
+  drawingGroups["attackAndRandomWalkLOS"] = [];
+
+  if (adx >= ady) {
+    const slopeY = ady / adx;
+
+    for (let i = 0; i < adx; i++) {
+      const neighborX = Math.round(x + signX);
+      const neighborY = Math.round(y + signY);
+
+      const nextXIsWalkable = dw.getTerrainAt({ l: p1.l, x: neighborX, y }) === 0;
+      const nextYIsWalkable = dw.getTerrainAt({ l: p1.l, x, y: neighborY }) === 0;
+      const currentIsWalkable = dw.getTerrainAt({ l: p1.l, x: Math.round(x), y: Math.round(y) }) === 0;
+
+      // drawingGroups["attackAndRandomWalkLOS"].push({
+      //   type: "rectangle",
+      //   point: { x, y },
+      //   width: 96,
+      //   height: 96,
+      //   fillColor: currentIsWalkable ? "green" : "red",
+      //   fillAlpha: 0.5,
+      // });
+
+      // drawingGroups["attackAndRandomWalkLOS"].push(
+      //   {
+      //     type: "rectangle",
+      //     point: { x: neighborX, y },
+      //     width: 96,
+      //     height: 96,
+      //     // fillColor: getInterpolatedColor(tile.threat),
+      //     fillColor: nextXIsWalkable ? "green" : "red",
+      //     fillAlpha: 0.5,
+      //   },
+      //   {
+      //     type: "rectangle",
+      //     point: { x, y: neighborY },
+      //     width: 96,
+      //     height: 96,
+      //     // fillColor: getInterpolatedColor(tile.threat),
+      //     fillColor: nextYIsWalkable ? "green" : "red",
+      //     fillAlpha: 0.5,
+      //   }
+      // );
+
+      if (!currentIsWalkable || (!nextXIsWalkable && !nextYIsWalkable)) {
+        if (renderPath) {
+          drawingGroups["attackAndRandomWalkLOS"].push(
+            {
+              type: "path",
+              points: path,
+              color: "green",
+            },
+            {
+              type: "line",
+              startPoint: path.length > 0 ? path[path.length - 1] : dw.character,
+              endPoint: p2,
+              color: "red",
+            }
+          );
+        }
+
+        return null; // Line of sight is blocked
+      }
+
+      path.push({ l: p1.l, x: Math.round(x), y: Math.round(y) });
+
+      x += signX;
+      y += signY * slopeY;
+    }
+  } else {
+    const slopeX = adx / ady;
+
+    for (let i = 0; i < ady; i++) {
+      const neighborX = Math.round(x + signX);
+      const neighborY = Math.round(y + signY);
+
+      const nextXIsWalkable = dw.getTerrainAt({ l: p1.l, x: neighborX, y }) === 0;
+      const nextYIsWalkable = dw.getTerrainAt({ l: p1.l, x, y: neighborY }) === 0;
+      const currentIsWalkable = dw.getTerrainAt({ l: p1.l, x: Math.round(x), y: Math.round(y) }) === 0;
+
+      // drawingGroups["attackAndRandomWalkLOS"].push({
+      //   type: "rectangle",
+      //   point: { x, y },
+      //   width: 96,
+      //   height: 96,
+      //   fillColor: currentIsWalkable ? "green" : "red",
+      //   fillAlpha: 0.5,
+      // });
+
+      // drawingGroups["attackAndRandomWalkLOS"].push(
+      //   {
+      //     type: "rectangle",
+      //     point: { x: neighborX, y },
+      //     width: 96,
+      //     height: 96,
+      //     // fillColor: getInterpolatedColor(tile.threat),
+      //     fillColor: nextXIsWalkable ? "green" : "red",
+      //     fillAlpha: 0.5,
+      //   },
+      //   {
+      //     type: "rectangle",
+      //     point: { x, y: neighborY },
+      //     width: 96,
+      //     height: 96,
+      //     // fillColor: getInterpolatedColor(tile.threat),
+      //     fillColor: nextYIsWalkable ? "green" : "red",
+      //     fillAlpha: 0.5,
+      //   }
+      // );
+
+      if (!currentIsWalkable || (!nextXIsWalkable && !nextYIsWalkable)) {
+        if (renderPath) {
+          drawingGroups["attackAndRandomWalkLOS"].push(
+            {
+              type: "path",
+              points: path,
+              color: "green",
+            },
+            {
+              type: "line",
+              startPoint: path.length > 0 ? path[path.length - 1] : dw.character,
+              endPoint: p2,
+              color: "red",
+            }
+          );
+        }
+
+        return null; // Line of sight is blocked
+      }
+
+      path.push({ l: p1.l, x: Math.round(x), y: Math.round(y) });
+
+      x += signX * slopeX;
+      y += signY;
+    }
+  }
+
+  if (renderPath) {
+    drawingGroups["attackAndRandomWalkLOS"].push({
+      type: "path",
+      points: path,
+      color: "#00FF56",
+    });
+  }
+
+  return path; // Return the path if line of sight is clear
+}
+
 export function moveToClosestSafeSpot(grid: GridMatrix) {
   let lowestThreatScore: number | undefined = undefined;
   let safestPoints: Array<{ x: number; y: number; distance: number }> = [];
@@ -79,7 +243,7 @@ export function moveToClosestSafeSpot(grid: GridMatrix) {
       }
 
       if (tile.threat === lowestThreatScore) {
-        console.log("adding low threat point", [x, y]);
+        // console.log("adding low threat point", [x, y]);
         safestPoints.push({ x, y, distance });
       }
     }
@@ -99,7 +263,7 @@ export function moveToClosestSafeSpot(grid: GridMatrix) {
         width: resolution * 96,
         height: resolution * 96,
         color: "#00FF56",
-        strokeWidth: 3
+        strokeWidth: 3,
       },
     ];
     // Move to the point, avoiding high-danger tiles

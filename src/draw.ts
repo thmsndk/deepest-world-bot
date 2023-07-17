@@ -252,6 +252,7 @@ function drawLine(
 
 // Utility function to draw a path on the canvas
 function drawPath(context: CanvasRenderingContext2D, points: Point[], color: string, lineWidth = 2) {
+  if (points.length === 0) return;
   context.beginPath();
   context.moveTo(points[0].x, points[0].y);
   for (let i = 1; i < points.length; i++) {
