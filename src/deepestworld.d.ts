@@ -320,14 +320,18 @@ export type Entity = BaseEntity & {
   targetId: number;
 
   // mission id when we have accepted the mission as well as runners.
-  storage: Array<{
-    level: number;
-    md: string;
-    qual: number;
-    r: number;
-    missionId: number;
-    runners: string[];
-  }>;
+  storage: Array<
+    | {
+        level: number;
+        md: string;
+        qual: number;
+        r: number;
+        n?: number;
+        missionId: number;
+        runners: string[];
+      }
+    | undefined
+  >;
 
   hostile: boolean;
 

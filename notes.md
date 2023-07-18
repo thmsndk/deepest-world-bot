@@ -1,6 +1,5 @@
-
-  
 // move mission to enchanting device
+
 ```json
 [
   "moveItem",
@@ -17,50 +16,49 @@
   }
 ]
 ```
+
 // enchant it
 // [
-//   "enchant",
-//   {
-//     "id": 6541,
-//     "md": "addRandMod"
-//   }
+// "enchant",
+// {
+// "id": 6541,
+// "md": "addRandMod"
+// }
 // ]
 
 // [
-//   "sortInv",
-//   {}
+// "sortInv",
+// {}
 // ]
 
 // merge items in the crafting bag
+
 ```json
-[
-  "merge",
-  {}
-]
+["merge", {}]
 ```
 
 ```json
-  [
-    "craft",
-    {
-      "id": 365,
-      "md": "workbench",
-      "max": 1
-    }
-  ]
+[
+  "craft",
+  {
+    "id": 365,
+    "md": "workbench",
+    "max": 1
+  }
+]
 ```
+
 // ["placeItem", { i: 6, x: 57.06254644358234, y: 69.46362541032049 }];
 
 // ["skill", { md: "fastheal1", i: 2, id: 9814 }];
 
 ```ts
 function getTerrainUnder(entity) {
-    const chunkKey = getChunkKey(entity.l-1, entity.y-1, entity.x);
-    const localY = worldCoordToLocalCoord(entity.y-1);
-    const localX = worldCoordToLocalCoord(entity.x);
-    return dw.chunks[chunkKey][0][localY][localX];
+  const chunkKey = getChunkKey(entity.l - 1, entity.y - 1, entity.x);
+  const localY = worldCoordToLocalCoord(entity.y - 1);
+  const localX = worldCoordToLocalCoord(entity.x);
+  return dw.chunks[chunkKey][0][localY][localX];
 }
-
 ```
 
 ```js
@@ -77,6 +75,7 @@ function getTerrainUnder(entity) {
 //     "y": 130.06244399528052
 // }
 ```
+
 hitboxes
 https://discord.com/channels/1061772817529585775/1061772817529585777/1127705977479761941
 width and height respectively
@@ -120,3 +119,35 @@ vfence1 0.3125 1.125
 hfence1 1.71875 0.09375
 vMagicFence1 0.3125 1.125
 hMagicFence1 1.71875 0.09375
+
+```js
+dw.moveItem = (bagFrom, indexFrom, bagTo, indexTo, idFrom, idTo) => {
+  const data = {
+    a: {
+      name: bagFrom,
+      i: indexFrom,
+    },
+    b: {
+      i: indexTo,
+    },
+  };
+
+  if (bagTo) {
+    data.b.name = bagTo;
+  }
+
+  if (idFrom) {
+    data.a.id = idFrom;
+  }
+  if (idTo) {
+    data.b.id = idTo;
+  }
+
+  dw.emit("moveItem", data);
+};
+```
+
+```js
+const minTreeLevel = Math.max(1, Math.min(dw.c.professions.woodcutting.level, dw.c.professions.woodworking.level) - 4);
+const minStoneLevel = Math.max(1, Math.min(dw.c.professions.stoneworking.level, dw.c.professions.mining.level) - 4);
+```

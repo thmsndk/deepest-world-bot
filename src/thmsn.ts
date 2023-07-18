@@ -14,9 +14,12 @@ import { GridMatrix, generateGrid } from "./grid";
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
 import { explore } from "./tasks/exploration";
+import { farmTrees } from "./tasks/farm-trees";
 import { selfHeal } from "./tasks/heal-self";
+import { inventory_ledger } from "./tasks/inventory-ledger";
 import { mission } from "./tasks/mission";
 import { sleep } from "./utility";
+
 console.log(`INITIALIZING\n ${String.raw`__BANNER__`}`);
 
 dw.debug = 1;
@@ -39,11 +42,15 @@ async function run() {
 
     addTask(mission(grid));
 
+    addTask(farmTrees());
+
     addTask(defendSelf(grid));
 
     // TODO: inventory full => 3 tasks goToSpawn,depositItems,returnToPosition
 
     addTask(selfHeal());
+
+    addTask(inventory_ledger());
 
     // TODO: update danger grid, should always be done, but we want to take the next task and process it after that
     // we don't want to farm while killing, unless we can't kill it

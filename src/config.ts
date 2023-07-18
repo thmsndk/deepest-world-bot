@@ -1,5 +1,5 @@
 export type Config = {
-  [key: string]: boolean;
+  [key: string]: boolean | number;
 };
 
 const DEFAULT_CONFIG: Config = {};
