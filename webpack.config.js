@@ -2,6 +2,7 @@ const path = require("path");
 const figlet = require("figlet");
 const git = require("git-rev-sync");
 const pkg = require("./package.json");
+const webpack = require('webpack');
 
 const banner = figlet.textSync("DW");
 const versionLength = pkg.version.length + 3;
@@ -23,26 +24,6 @@ ${bannerIncludingVersion}
   build:    ${buildTimeString} ${git.isDirty() ? `(dirty)` : `(actual)`}
 */\n\n\n`
 
-
-// class BannerPlugin {
-//   constructor(options) {
-//     this.banner = options.banner;
-//   }
-
-//   apply(compiler) {
-//     compiler.hooks.emit.tapAsync('FileListPlugin', (compilation, callback) => {
-//       compilation.chunks.forEach(chunk => {
-//         chunk.files.forEach(filename => {
-//           const asset = compilation.assets[filename];
-//           asset._value = this.banner + asset._value; // append banner
-//         });
-//       });
-
-//       callback();
-//     });
-//   }
-// }
-
 module.exports = {
   mode: "development",
   devtool: false,
@@ -55,11 +36,12 @@ module.exports = {
     path: path.resolve(__dirname, "./dist"),
     filename: "[name].js",
   },
-  // plugins: [
-  //   new BannerPlugin({
-  //     banner: FULL_BANNER
-  //   }),
-  // ],
+  plugins: [
+    new webpack.BannerPlugin({
+      banner: FULL_BANNER,
+      raw: true
+    })
+  ],
   module: {
     rules: [
       {
