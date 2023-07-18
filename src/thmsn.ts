@@ -17,6 +17,7 @@ import { explore } from "./tasks/exploration";
 import { selfHeal } from "./tasks/heal-self";
 import { mission } from "./tasks/mission";
 import { sleep } from "./utility";
+console.log(`INITIALIZING\n ${String.raw`__BANNER__`}`);
 
 dw.debug = 1;
 let grid: GridMatrix = [];
