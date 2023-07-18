@@ -21,7 +21,10 @@ taskRegistry[TASK_NAME] = {
     // run farming trees
     // TODO a specific level?, a specific place?
     // TODO: danger levels near target? add clear danger task?
-    // const minTreeLevel = Math.max(1, Math.min(dw.c.professions.woodcutting.level, dw.c.professions.woodworking.level) - 4);
+    const minTreeLevel = Math.max(
+      1,
+      Math.min(dw.c.professions.woodcutting.level, dw.c.professions.woodworking.level) - 4
+    );
     // const minStoneLevel = Math.max(1, Math.min(dw.c.professions.stoneworking.level, dw.c.professions.mining.level) - 4);
 
     if (await depositIfInventoryFull()) {
@@ -33,7 +36,10 @@ taskRegistry[TASK_NAME] = {
     const trees = dw.entities
       .filter(
         (entity) =>
-          entity.l === dw.character.l && entity.tree && hasLineOfSight(entity, dw.character, nonTraversableEntities)
+          entity.l === dw.character.l &&
+          entity.tree &&
+          entity.qual >= minTreeLevel &&
+          hasLineOfSight(entity, dw.character, nonTraversableEntities)
       )
       .map((entity) => ({
         entity,
@@ -50,7 +56,7 @@ taskRegistry[TASK_NAME] = {
         return a.distance - b.distance;
       });
 
-    console.log("trees", trees);
+    console.log("trees", minTreeLevel, trees);
     if (trees.length === 0) {
       return TASK_STATE.DONE;
     }

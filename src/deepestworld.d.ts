@@ -142,7 +142,7 @@ declare global {
 }
 
 enum TerrainTypes {
-  WALKABLE = 0
+  WALKABLE = 0,
 }
 type Chunk = Array<Array<TerrainTypes[]>>;
 
@@ -206,6 +206,9 @@ type Character = BaseEntity & {
     mining: DefaultSkill;
   };
 
+  /** Skill specific timestamps of their cooldowns */
+  cds: Record<string, number>;
+
   skills: Array<{
     md: string;
     physDmg: number;
@@ -218,6 +221,9 @@ type Character = BaseEntity & {
     range: number;
     cost: number1;
   }>;
+
+  /** Skills in skill bar */
+  skillBag: Array<Item | null>;
 
   gear: { [key: string]: { md: string; mods: Mods; qual: number; r: number } };
 
@@ -245,7 +251,29 @@ type Character = BaseEntity & {
 
   bag: readonly Array<Item | undefined>;
 
-  craftIn: readonly Array<Item>;
+  craftIn: readonly Array<Item | undefined>;
+
+  /** Timestamp of the global cooldown */
+  gcd?: number;
+
+  professions: {
+    axesmith: Profession;
+    bowsmith: Profession;
+    daggersmith: Profession;
+    gemcutting: Profession;
+    macesmith: Profession;
+    metalworking: Profession;
+    mining: Profession;
+    pickaxesmith: Profession;
+    platesmith: Profession;
+    spearsmith: Profession;
+    staffsmith: Profession;
+    stoneworking: Profession;
+    swordsmith: Profession;
+    wandsmith: Profession;
+    woodcutting: Profession;
+    woodworking: Profession;
+  };
 };
 
 export type Item = {
@@ -290,7 +318,13 @@ export type Entity = BaseEntity & {
 
   ownerDbId: number;
 
+  /** The level of a monster entity */
   level: number;
+
+  /**
+   * The level / quality of the tree
+   */
+  qual: number;
 
   md: string;
 
