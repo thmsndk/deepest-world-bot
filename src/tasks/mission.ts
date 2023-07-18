@@ -171,6 +171,10 @@ taskRegistry[TASK_NAME] = {
       }
     }
 
+    if (!dw.character.mission) {
+      return TASK_STATE.DONE;
+    }
+
     const getThreat = (entity: Entity): number => {
       const row = grid[Math.floor(entity.y)];
       if (row) {
