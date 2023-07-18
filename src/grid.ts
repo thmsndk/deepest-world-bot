@@ -103,10 +103,10 @@ function getThreatLevel(x: number, y: number, nonTraversableEntities: Array<Enti
       return 0;
     }
 
-    const los = hasLineOfSight(entity, dw.character, nonTraversableEntities);
-    if (!los) {
-      return 0;
-    }
+    // const los = hasLineOfSight(entity, dw.character, nonTraversableEntities);
+    // if (!los) {
+    //   return 0;
+    // }
 
     threat += 5 / distance;
 
@@ -278,7 +278,7 @@ function distToSegment(p: TargetPoint, v: TargetPoint, w: TargetPoint) {
  * @returns
  */
 export function hasLineOfSight(
-  target: MapPoint,
+  target: MapPoint | Entity,
   from: { l: number; x: number; y: number } = dw.character,
   nonTraversableEntities: Array<Entity | TargetPoint>
 ) {
@@ -286,12 +286,15 @@ export function hasLineOfSight(
     return false;
   }
 
-  for (let e of nonTraversableEntities) {
+  for (let entity of nonTraversableEntities) {
     let thickCheck = terrainThickness;
 
+    // skip the entity target, e.g. we don't care that the tree we are looking for is "blocking";
+    if ("id" in entity && "id" in target && entity.id === target.id) continue;
+
     // blocking entities treated as half as big as terrain
-    if ("id" in e && e.id) thickCheck = terrainThickness / 2;
-    if (distToSegment(e, from, target) < thickCheck) {
+    if ("id" in entity && entity.id) thickCheck = terrainThickness / 2;
+    if (distToSegment(entity, from, target) < thickCheck) {
       return false;
     }
   }

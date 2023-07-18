@@ -50,6 +50,7 @@ taskRegistry[TASK_NAME] = {
         return a.distance - b.distance;
       });
 
+    console.log("trees", trees);
     if (trees.length === 0) {
       return TASK_STATE.DONE;
     }

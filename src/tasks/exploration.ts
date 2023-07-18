@@ -1,4 +1,5 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
+import { drawingGroups } from "../draw";
 import { sleep } from "../utility";
 const TASK_NAME = "exploration";
 
@@ -117,16 +118,17 @@ async function drunkenWalk(resolution = 1) {
   // const goal = snapToGrid(x, y, resolution);
   const goal = { x: x, y: y };
   // const goal = { x: Math.floor(x) & 15, y: Math.floor(y) & 15 };
-  //   drawingGroups["drunkenWalk"].push(
-  //     // render open set
-  //     {
-  //       type: "rectangle",
-  //       point: { x: goal.x, y: goal.y },
-  //       width: 96,
-  //       height: 96,
-  //       color: "#00FF00",
-  //     }
-  //   );
+
+  drawingGroups["move"] = [
+    {
+      type: "rectangle",
+      point: goal,
+      width: resolution * 96,
+      height: resolution * 96,
+      color: "#00FF56",
+      strokeWidth: 3,
+    },
+  ];
 
   console.log(
     "drunk move new direction",

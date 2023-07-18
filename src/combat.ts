@@ -4,6 +4,11 @@ import { GridMatrix } from "./grid";
 import { moveToClosestSafeSpot, getWalkablePathInStraightLine } from "./utility";
 
 export function attackAndRandomWalk(grid: GridMatrix, target: { distance: number; entity: Entity; los: boolean }) {
+  // wait untill full health
+  if (!dw.character.combat && dw.character.hp !== dw.character.hpMax) {
+    return true;
+  }
+
   if (!target) {
     return true;
   }
@@ -41,6 +46,7 @@ export function attackAndRandomWalk(grid: GridMatrix, target: { distance: number
   const inAttackRange = target.distance <= skillToUse.range;
   if (!inAttackRange) {
     // TODO: pick a safe spot towards the target
+    // e.g. move into attack range, not onto the entity
     dw.move(target.entity.x, target.entity.y);
     return 1;
   }
