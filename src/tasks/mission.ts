@@ -4,12 +4,13 @@ import { config } from "../config";
 import { merge } from "../console";
 import { Entity } from "../deepestworld";
 import { sacItems } from "../disenchant";
-import { GridMatrix } from "../grid";
-import { hasLineOfSight, sleep } from "../utility";
+import { drawingGroups } from "../draw";
+import { GridMatrix, TargetPoint, hasLineOfSight } from "../grid";
+import { sleep } from "../utility";
 const TASK_NAME = "mission";
 
-export function mission(grid: GridMatrix): TaskTuple {
-  return [TASK_NAME, grid];
+export function mission(grid: GridMatrix, nonTraversableEntities: Array<Entity | TargetPoint>): TaskTuple {
+  return [TASK_NAME, grid, nonTraversableEntities];
 }
 
 // Initialize config
@@ -26,7 +27,7 @@ if (config.mission_auto_enchant === undefined) {
 }
 
 taskRegistry[TASK_NAME] = {
-  run: async (grid: GridMatrix) => {
+  run: async (grid: GridMatrix, nonTraversableEntities: Array<Entity | TargetPoint>) => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
     const missionTables = dw.entities.filter((entity) => entity.owner && entity.md === "missionTable");
 
@@ -189,7 +190,7 @@ taskRegistry[TASK_NAME] = {
         entity,
         distance: dw.distance(dw.character, entity),
         threat: getThreat(entity),
-        los: hasLineOfSight(entity, true) ? true : false,
+        los: hasLineOfSight(entity, dw.character, nonTraversableEntities),
       }))
       .sort((a, b) => {
         if (a.los !== b.los) {
@@ -213,6 +214,22 @@ taskRegistry[TASK_NAME] = {
     if (!target) {
       return TASK_STATE.DONE;
     }
+
+    // TODO: does it make sense to look at entities we don't have los for?
+    drawingGroups["target"].push(
+      {
+        type: "circle",
+        point: target.entity,
+        radius: 0.25,
+        color: target.los ? "#00FF00" : "red",
+      },
+      {
+        type: "line",
+        startPoint: dw.character,
+        endPoint: target.entity,
+        color: target.los ? "#00FF00" : "red",
+      }
+    );
 
     // TODO: setting target in context would make things easier
     if (attackAndRandomWalk(grid, target) === 1) {

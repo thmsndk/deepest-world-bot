@@ -230,7 +230,7 @@ export function moveToClosestSafeSpot(grid: GridMatrix) {
       if (tile.threat === Infinity) continue;
 
       const distance = dw.distance(dw.character, { x, y });
-      if (distance > 5) continue;
+      if (distance > 2.5) continue;
 
       const los = hasLineOfSight({ l: dw.character.l, x, y });
       if (!los) continue;

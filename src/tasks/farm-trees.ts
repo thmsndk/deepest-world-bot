@@ -1,17 +1,20 @@
 import { TASK_STATE, TaskTuple, taskRegistry } from ".";
 import { config } from "../config";
 import { merge } from "../console";
-import { hasLineOfSight, sleep } from "../utility";
+import { Entity } from "../deepestworld";
+import { drawingGroups } from "../draw";
+import { TargetPoint, hasLineOfSight } from "../grid";
+import { sleep } from "../utility";
 export const TASK_NAME = "farm-trees";
 
-export function farmTrees(): TaskTuple {
-  return [TASK_NAME];
+export function farmTrees(nonTraversableEntities: Array<Entity | TargetPoint>): TaskTuple {
+  return [TASK_NAME, nonTraversableEntities];
 }
 
 // TODO: perhaps a farm single tree, that is dedicated to chopping down a tree
 taskRegistry[TASK_NAME] = {
   priority: 10,
-  run: async () => {
+  run: async (nonTraversableEntities: Array<Entity | TargetPoint>) => {
     if (!config.collect_wood_low_threshold) {
       return TASK_STATE.DONE;
     }
@@ -28,30 +31,59 @@ taskRegistry[TASK_NAME] = {
     const treeDistance = 10;
 
     const trees = dw.entities
-      .filter((entity) => entity.l === dw.character.l && entity.tree && hasLineOfSight(entity))
+      .filter(
+        (entity) =>
+          entity.l === dw.character.l && entity.tree && hasLineOfSight(entity, dw.character, nonTraversableEntities)
+      )
       .map((entity) => ({
         entity,
         distance: dw.distance(dw.character, entity),
+        los: hasLineOfSight(entity, dw.character, nonTraversableEntities),
       }))
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => {
+        if (a.los !== b.los) {
+          // los true before los false
+          return Number(b.los) - Number(a.los);
+        }
+
+        // ascending by distance
+        return a.distance - b.distance;
+      });
 
     if (trees.length === 0) {
       return TASK_STATE.DONE;
     }
 
-    const target = trees[0]?.entity;
-    const distancetoTarget = dw.distance(dw.character, target);
+    const target = trees[0];
+
+    // TODO: does it make sense to look at entities we don't have los for?
+    drawingGroups["target"].push(
+      {
+        type: "circle",
+        point: target.entity,
+        radius: 0.25,
+        color: target.los ? "#00FF00" : "red",
+      },
+      {
+        type: "line",
+        startPoint: dw.character,
+        endPoint: target.entity,
+        color: target.los ? "#00FF00" : "red",
+      }
+    );
+
+    const distancetoTarget = dw.distance(dw.character, target.entity);
     const inRange = distancetoTarget <= dw.c.defaultSkills.woodcutting.range; /* Attack */
 
     if (!inRange) {
-      dw.move(target.x, target.y);
+      dw.move(target.entity.x, target.entity.y);
       return TASK_STATE.EVALUATE_NEXT_TICK;
     }
 
     if (dw.isSkillReady("chop") && inRange) {
-      dw.setTarget(target);
-      console.log("chop", target);
-      dw.emit("chop", { id: target.id });
+      dw.setTarget(target.entity);
+      console.log("chop", target.entity);
+      dw.emit("chop", { id: target.entity.id });
       return TASK_STATE.EVALUATE_NEXT_TICK;
     }
 

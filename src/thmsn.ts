@@ -8,9 +8,10 @@
  */
 
 import { registerConsoleCommands } from "./console";
+import { Entity } from "./deepestworld";
 import { drawingGroups, onDrawEnd } from "./draw";
 import { drawNameplates } from "./draw-nameplates";
-import { GridMatrix, generateGrid } from "./grid";
+import { GridMatrix, TargetPoint, generateGrid, getNonTraversableEntities } from "./grid";
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
 import { explore } from "./tasks/exploration";
@@ -24,11 +25,13 @@ console.log(`INITIALIZING\n ${String.raw`__BANNER__`}`);
 
 dw.debug = 1;
 let grid: GridMatrix = [];
+let nonTraversableEntities: Array<Entity | TargetPoint> = [];
 async function run() {
   // Loop  state transitions that pushes a state onto the stack
   while (true) {
     drawingGroups["move"] = [];
     drawingGroups["targetPath"] = [];
+    drawingGroups["target"] = [];
 
     // TODO: start, join, abandon mission
     // TODO: Farm trees
@@ -40,11 +43,11 @@ async function run() {
 
     addTask(explore());
 
-    addTask(mission(grid));
+    addTask(mission(grid, nonTraversableEntities));
 
-    addTask(farmTrees());
+    addTask(farmTrees(nonTraversableEntities));
 
-    addTask(defendSelf(grid));
+    addTask(defendSelf(grid, nonTraversableEntities));
 
     // TODO: inventory full => 3 tasks goToSpawn,depositItems,returnToPosition
 
@@ -73,7 +76,8 @@ setInterval(() => {
 
 setInterval(() => {
   try {
-    grid = generateGrid();
+    nonTraversableEntities = getNonTraversableEntities();
+    grid = generateGrid(nonTraversableEntities);
   } catch (error) {
     console.error("failed generating grid", error);
   }

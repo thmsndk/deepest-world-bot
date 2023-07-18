@@ -1,5 +1,5 @@
+import { Entity } from "./deepestworld";
 import { Rectangle, drawingGroups } from "./draw";
-import { hasLineOfSight } from "./utility";
 
 export type GridMatrix = Array<
   Array<{
@@ -7,7 +7,7 @@ export type GridMatrix = Array<
   }>
 >;
 
-export function generateGrid(gridSize = 50, resolution = 0.5) {
+export function generateGrid(nonTraversableEntities: Array<Entity | TargetPoint>, gridSize = 50, resolution = 0.5) {
   gridSize = gridSize * resolution;
   // Calculate the center of the grid
   const centerX = dw.character.x - Math.floor(gridSize / 2);
@@ -34,13 +34,13 @@ export function generateGrid(gridSize = 50, resolution = 0.5) {
 
       if (!grid[y][x]) {
         grid[y][x] = {
-          threat: getThreatLevel(x, y),
+          threat: getThreatLevel(x, y, nonTraversableEntities),
         };
       }
     }
   }
 
-  drawGrid(grid, resolution);
+  // drawGrid(grid, resolution);
   // console.debug("generateGrid", grid);
   // console.table(grid);
   return grid;
@@ -88,7 +88,7 @@ function snapToGrid(x: number, y: number, resolution = 0.5) {
   return { x: snappedX, y: snappedY };
 }
 
-function getThreatLevel(x: number, y: number, maxDistance = 15) {
+function getThreatLevel(x: number, y: number, nonTraversableEntities: Array<Entity | TargetPoint>, maxDistance = 15) {
   let threat = 0;
   dw.entities.forEach((entity) => {
     if (!entity.ai) {
@@ -103,7 +103,7 @@ function getThreatLevel(x: number, y: number, maxDistance = 15) {
       return 0;
     }
 
-    const los = hasLineOfSight(entity);
+    const los = hasLineOfSight(entity, dw.character, nonTraversableEntities);
     if (!los) {
       return 0;
     }
@@ -234,4 +234,105 @@ function rgbToHex(r: number, g: number, b: number) {
   };
 
   return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+export interface TargetPoint {
+  x: number;
+  y: number;
+}
+
+interface MapPoint {
+  l: number;
+  x: number;
+  y: number;
+}
+// How wide to treat terrain for line of sight checks
+let terrainThickness = 0.7;
+
+function sqr(x: number) {
+  return x * x;
+}
+function dist2(v: TargetPoint, w: TargetPoint) {
+  return sqr(v.x - w.x) + sqr(v.y - w.y);
+}
+function distToSegmentSquared(p: TargetPoint, v: TargetPoint, w: TargetPoint) {
+  var l2 = dist2(v, w);
+  if (l2 == 0) return dist2(p, v);
+  var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return dist2(p, {
+    x: v.x + t * (w.x - v.x),
+    y: v.y + t * (w.y - v.y),
+  });
+}
+
+function distToSegment(p: TargetPoint, v: TargetPoint, w: TargetPoint) {
+  return Math.sqrt(distToSegmentSquared(p, v, w));
+}
+
+/**
+ * If any nonTraversableEntity is too close to the line segment between from and target, we do not have line of sight
+ * @param target
+ * @param from
+ * @param nonTraversableEntities
+ * @returns
+ */
+export function hasLineOfSight(
+  target: MapPoint,
+  from: { l: number; x: number; y: number } = dw.character,
+  nonTraversableEntities: Array<Entity | TargetPoint>
+) {
+  if (dw.getTerrainAt({ l: from.l, x: target.x, y: target.y }) > 0) {
+    return false;
+  }
+
+  for (let e of nonTraversableEntities) {
+    let thickCheck = terrainThickness;
+
+    // blocking entities treated as half as big as terrain
+    if ("id" in e && e.id) thickCheck = terrainThickness / 2;
+    if (distToSegment(e, from, target) < thickCheck) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+const gridWidth = 24; // in-game units, this captures the area entities load in
+const gridHeight = 16;
+
+export function getNonTraversableEntities() {
+  let nonTraversableEntities: Array<Entity | TargetPoint> = dw.entities.filter(
+    (e) => !e.ai && !e.player && !e.ore && !e.md.includes("portal")
+  );
+
+  // walk thru chunks and add everything that is not 0
+  const characterMapLevel = dw.character.l.toString();
+  let chunkPropertyKeys = Object.keys(dw.chunks).filter((k) => k.startsWith(characterMapLevel));
+  for (let k of chunkPropertyKeys) {
+    let r = Number(k.split(".")[2]);
+    let c = Number(k.split(".")[1]);
+    for (let i = 0; i < 16; ++i) {
+      for (let j = 0; j < 16; ++j) {
+        if (dw.chunks[k][0][i][j] > 0) {
+          let x = r * 16 + j;
+          let y = c * 16 + i;
+
+          // Don't care about terrain out of the grid area
+          if (dw.distance({ x: x, y: y }, dw.c) > gridWidth) continue;
+
+          nonTraversableEntities.push({ x: x + terrainThickness / 2, y: y + terrainThickness / 2 });
+        }
+      }
+    }
+  }
+
+  return nonTraversableEntities;
+}
+
+function getTileInfo(x: number, y: number, radius: number, monsters: Entity[], nonTraversableEntities: TargetPoint[]) {
+  // monsters exists so we don't have to iterate ALL entities, all the time
+  let nearMonsters = monsters.filter((m) => dw.distance({ x: x, y: y }, m) < radius);
+  // let target = dw.findEntities((entity) => entity.id === dw.targetId).shift()
 }

@@ -141,7 +141,10 @@ declare global {
   };
 }
 
-type Chunk = {}[];
+enum TerrainTypes {
+  WALKABLE = 0
+}
+type Chunk = Array<Array<TerrainTypes[]>>;
 
 /**
  * Each property is a chunk of 1x16x16 voxels containing data about the terrain.
@@ -290,6 +293,12 @@ export type Entity = BaseEntity & {
   level: number;
 
   md: string;
+
+  /**
+   * Is it a player?
+   */
+  player?: boolean;
+
   /**
    * Is it a monster?
    */
