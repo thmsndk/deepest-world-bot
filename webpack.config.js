@@ -4,7 +4,7 @@ const git = require("git-rev-sync");
 const pkg = require("./package.json");
 const webpack = require('webpack');
 
-const banner = figlet.textSync("DW");
+const banner = figlet.textSync("DW Bot");
 const versionLength = pkg.version.length + 3;
 const bannerIncludingVersion = `${banner.slice(0, banner.length - versionLength)}v${pkg.version}`;
 console.log(`${bannerIncludingVersion}`);
