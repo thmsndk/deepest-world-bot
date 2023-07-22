@@ -189,7 +189,7 @@ taskRegistry[TASK_NAME] = {
     // skull 50% increase dmg and 100% increased life per skull
     // TODO: mission logic, monster missions is just killing missions
     const closestEntity = dw.entities
-      .filter((entity) => entity.l === dw.character.l && entity.ai && entity.r < 2)
+      .filter((entity) => entity.l === dw.character.l && entity.ai && entity.r === 0)
       .map((entity) => ({
         entity,
         distance: dw.distance(dw.character, entity),
