@@ -23,6 +23,12 @@ declare global {
 
     chunks: Chunks;
 
+    md: {
+      items: {
+        [md: string]: { hitbox: { w: number; h: number }; collision?: boolean };
+      };
+    };
+
     findClosestMonster(cb: (entity: Monster) => void);
 
     /**
