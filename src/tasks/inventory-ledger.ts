@@ -12,7 +12,7 @@ export const ledger: Ledger = {};
 
 taskRegistry[TASK_NAME] = {
   run: async () => {
-    if (dw.character.l !== dw.character.spawn.l) {
+    if (!dw.character.spawn || dw.character.l !== dw.character.spawn.l) {
       return TASK_STATE.DONE;
     }
 

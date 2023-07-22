@@ -1,6 +1,7 @@
 import { Config, config } from "./config";
 import { Item } from "./deepestworld";
 import { calculateItemScore, sacItems } from "./disenchant";
+import { placeItems } from "./grid-placement";
 import { sleep } from "./utility";
 
 declare global {
@@ -11,6 +12,13 @@ declare global {
     merge: () => void;
     scoreBag: () => void;
     config: Config;
+    placeItems: (
+      itemName: string,
+      startRow?: number,
+      startColumn?: number,
+      endRow?: number,
+      endColumn?: number
+    ) => void;
   }
 }
 
@@ -34,6 +42,8 @@ export function registerConsoleCommands() {
       .sort((a, b) => a.score - b.score);
     console.log("bagScores", bagScores);
   };
+
+  top!.placeItems = placeItems;
 }
 // go to spawn
 function goHome() {

@@ -233,7 +233,7 @@ type Character = BaseEntity & {
 
   gear: { [key: string]: { md: string; mods: Mods; qual: number; r: number } };
 
-  spawn: { l: number; x: number; y: number };
+  spawn: { l: number; w: number; x: number; y: number };
 
   mission: {
     item: {
