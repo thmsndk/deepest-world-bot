@@ -16,12 +16,12 @@ function createProxy(config: Config): Config {
 }
 
 function loadConfigFromLocalStorage(): Config {
-  const savedConfig = localStorage.getItem("config");
-  return savedConfig ? JSON.parse(savedConfig) : DEFAULT_CONFIG;
+  const savedConfig = dw.get("config") as Config;
+  return savedConfig ?? DEFAULT_CONFIG;
 }
 
 function saveConfigToLocalStorage(config: Config): void {
-  localStorage.setItem("config", JSON.stringify(config));
+  dw.set("config", config);
 }
 
 export const config = createProxy(loadConfigFromLocalStorage());

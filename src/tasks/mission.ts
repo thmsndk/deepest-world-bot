@@ -26,6 +26,10 @@ if (config.mission_auto_enchant === undefined) {
   config.mission_auto_enchant = true;
 }
 
+if (config.mission_auto_enter === undefined) {
+  config.mission_auto_enter = false;
+}
+
 taskRegistry[TASK_NAME] = {
   run: async (grid: GridMatrix, nonTraversableEntities: Array<Entity | TargetPoint>) => {
     // we can't really see if we are inside the mission, the best we can do is check if there is one of hour missionboards nearby
@@ -91,16 +95,18 @@ taskRegistry[TASK_NAME] = {
     if (missionTables.length > 0) {
       if (dw.character.mission) {
         // Join / Enter mission if we have a mission in progress
-        const board = missionTables[0];
-        const inRange = dw.distance(dw.character, board) <= 2;
-        if (!inRange) {
-          dw.move(board.x, board.y);
-          return TASK_STATE.EVALUATE_NEXT_TICK;
-        } else {
-          dw.enterMission();
-          // TODO: floodfill to detect if we are stuck and abandon
-          await sleep(2000);
-          return TASK_STATE.EVALUATE_NEXT_TICK;
+        if (config.mission_auto_enter) {
+          const board = missionTables[0];
+          const inRange = dw.distance(dw.character, board) <= 2;
+          if (!inRange) {
+            dw.move(board.x, board.y);
+            return TASK_STATE.EVALUATE_NEXT_TICK;
+          } else {
+            dw.enterMission();
+            // TODO: floodfill to detect if we are stuck and abandon
+            await sleep(2000);
+            return TASK_STATE.EVALUATE_NEXT_TICK;
+          }
         }
       } else {
         const board = missionTables[0];
@@ -133,40 +139,44 @@ taskRegistry[TASK_NAME] = {
 
           // Only fill up board when it is empty, that way we run all missions
           if (!boardHasMissions) {
-            for (let index = 0; index < board.storage.length; index++) {
-              const mission = board.storage[index];
-              if (!mission) {
-                if (!boardInRange) {
-                  dw.move(board.x, board.y);
-                  return TASK_STATE.EVALUATE_NEXT_TICK;
-                } else {
-                  const missionToAdd = missionsInBag.shift();
-                  if (!missionToAdd) break;
+            // for (let index = 0; index < board.storage.length; index++) {
+            const index = 0; // ignore mission storage for now.
+            const mission = board.storage[index];
+            if (!mission) {
+              if (!boardInRange) {
+                dw.move(board.x, board.y);
+                return TASK_STATE.EVALUATE_NEXT_TICK;
+              } else {
+                const missionToAdd = missionsInBag.shift();
+                // if (!missionToAdd) break;
+                if (missionToAdd) {
                   dw.moveItem("bag", missionToAdd.bagIndex, "storage", index, undefined, board.id);
                 }
               }
-              // TODO: do we have a mission below lvl 6 in our bag?
-
-              // TODO: move into range of board
-              // TODO add mission to board
             }
+            // TODO: do we have a mission below lvl 6 in our bag?
+
+            // TODO: move into range of board
+            // TODO add mission to board
+            // }
           }
         }
 
         // accept mission
         if (config.mission_auto_accept) {
-          for (let index = 0; index < board.storage.length; index++) {
-            const mission = board.storage[index];
-            if (mission) {
-              if (!boardInRange) {
-                dw.move(board.x, board.y);
-                return TASK_STATE.EVALUATE_NEXT_TICK;
-              } else {
-                dw.acceptMission(board.id, index);
-                return TASK_STATE.EVALUATE_NEXT_TICK;
-              }
+          // for (let index = 0; index < board.storage.length; index++) {
+          const index = 0; // we can only accept slot 0, more logic needs to be added to move from storage to slot 0
+          const mission = board.storage[index];
+          if (mission) {
+            if (!boardInRange) {
+              dw.move(board.x, board.y);
+              return TASK_STATE.EVALUATE_NEXT_TICK;
+            } else {
+              dw.acceptMission(board.id, index);
+              return TASK_STATE.EVALUATE_NEXT_TICK;
             }
           }
+          // }
         }
       }
     }
