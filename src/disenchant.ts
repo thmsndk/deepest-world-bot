@@ -34,6 +34,7 @@ const mdScore: Record<string, ScoringModifiers> = {
 export function calculateItemScore(item: Item): number {
   if (!item) return -100;
   if (item.n) return -100; // stackable items can't be disenchanted.
+  if (item.qual < dw.character.level) return -100; // disenchant low level items.
 
   const modScore: Record<string, ScoringModifiers> = {
     Dmg: [5, 0.5],
@@ -110,7 +111,7 @@ export function calculateItemScore(item: Item): number {
 
 // TODO: ability to not sac specific types if items, with certain enchants.
 export async function sacItems(level?: number, maxRarity = 2) {
-  const maxLevel = level ?? dw.character.level - 1;
+  // const maxLevel = level ?? dw.character.level - 1;
 
   const altar = dw.entities.find((entity) => entity && entity.md === "enchantingDevice1" && entity.owner);
 
@@ -135,14 +136,7 @@ export async function sacItems(level?: number, maxRarity = 2) {
       if (!x.item) return false;
       if (x.item.md === "monsterMission") return false;
 
-      return (
-        x.item &&
-        x.item.qual <= maxLevel &&
-        x.item.r <= maxRarity &&
-        !x.item.n &&
-        x.item.md !== "monsterMission" &&
-        x.score < 20
-      );
+      return x.item && x.item.r <= maxRarity && !x.item.n && x.item.md !== "monsterMission" && x.score < 20;
     })
     .forEach(async (x) => {
       if (altar) {
