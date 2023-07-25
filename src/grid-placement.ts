@@ -146,6 +146,12 @@ export async function placeItems(
         if (!item) return;
       }
 
+      const inPlaceRange = dw.distance(dw.c, { x: px, y: py }) < 2;
+      if (!inPlaceRange) {
+        dw.move(px, py - 0.5); // TODO move half the distance
+        await sleep(2000);
+      }
+
       dw.emit("placeItem", { i: item?.bagIndex, x: px, y: py });
       await sleep(500);
     }

@@ -15,6 +15,7 @@ import { GridMatrix, TargetPoint, generateGrid, getNonTraversableEntities } from
 import { addTask, process } from "./tasks";
 import { defendSelf } from "./tasks/defend-self";
 import { explore } from "./tasks/exploration";
+import { farmMobs } from "./tasks/farm-mobs";
 import { farmTrees } from "./tasks/farm-trees";
 import { selfHeal } from "./tasks/heal-self";
 import { inventory_ledger } from "./tasks/inventory-ledger";
@@ -42,6 +43,8 @@ async function run() {
     // disenchant items?
 
     addTask(explore());
+
+    addTask(farmMobs(grid, nonTraversableEntities));
 
     addTask(mission(grid, nonTraversableEntities));
 

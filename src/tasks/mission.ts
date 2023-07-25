@@ -80,10 +80,12 @@ taskRegistry[TASK_NAME] = {
             dw.moveItem("bag", mission.bagIndex, "storage", 0, undefined, altar.id);
             await sleep(500);
             // TODO: detect materials and bail out when it can't be enchanted
-            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
-            dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            if (mission.item?.r === 0) {
+              dw.emit("enchant", { id: altar.id, md: "randRarity" });
+            }
+            // dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            // dw.emit("enchant", { id: altar.id, md: "addRandMod" });
+            // dw.emit("enchant", { id: altar.id, md: "addRandMod" });
             await sleep(500);
             // Move enchanted mission from altar to bag
             dw.moveItem("storage", 0, "bag", mission.bagIndex, altar.id);

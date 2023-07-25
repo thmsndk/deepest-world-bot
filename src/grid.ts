@@ -20,6 +20,8 @@ export function generateGrid(nonTraversableEntities: Array<Entity | TargetPoint>
     for (let j = 0; j < gridSize; j += resolution) {
       const { x, y } = snapToGrid(centerX + i, centerY + j, resolution);
 
+      if (!x || !y) continue;
+
       const terrain = dw.getTerrainAt({
         l: dw.character.l,
         x: x,
@@ -282,7 +284,7 @@ export function hasLineOfSight(
   from: { l: number; x: number; y: number } = dw.character,
   nonTraversableEntities: Array<Entity | TargetPoint>
 ) {
-  if (dw.getTerrainAt({ l: from.l, x: target.x, y: target.y }) > 0) {
+  if (!target.x || !target.y || dw.getTerrainAt({ l: from.l, x: target.x, y: target.y }) > 0) {
     return false;
   }
 
